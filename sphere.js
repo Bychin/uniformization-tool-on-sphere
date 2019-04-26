@@ -9,6 +9,7 @@ const VSHADER_SOURCE = `
   varying vec3 v_Normal;
   varying vec3 v_Position;
   void main() {
+    gl_PointSize = 1.0; // TODO
     vec4 color = vec4(0.8, 0.2, 0.2, 1); // Sphere color
     gl_Position = u_MvpMatrix * a_Position;
     // Calculate the vertex position in the world coordinate
@@ -44,23 +45,46 @@ const FSHADER_SOURCE = `
 const SPIRAL_SPHERE = 'spiral';
 const CLASSIC_SPHERE = 'classic';
 
+
+const DRAW_MODE = {
+  POINTS: 'points',
+  LINE_STRIP: 'line_strip',
+  TRIANGLE_STRIP: 'triangle_strip'
+}
+
 const DEFAULT_SPHERE_ANGLE_DEG = 0;
 
-const DEFAULT_CAMERA_POS = {x:3, y:3, z:2}
-const DEFAULT_CAMERA_LOOK_AT = {x:0, y:0, z:0}
-const DEFAULT_CAMERA_UP = {x:0, y:0, z:1}
+const DEFAULT_CAMERA_POS = {
+  x: 10,
+  y: 0,
+  z: 0
+}
+const DEFAULT_CAMERA_LOOK_AT = {
+  x: 0,
+  y: 0,
+  z: 0
+}
+const DEFAULT_CAMERA_UP = {
+  x: 0,
+  y: 0,
+  z: 1
+}
+
+const AMORTIZATION = 0.;
 
 
 class Sphere {
   // TODO others angles of sphere
   // TODO handler on mouse drag
 
-  constructor(type, div, radius, center) {
+  constructor(type, mode, div, radius, center) {
+    this.mode = mode;
+
     this.DIV = div;
     this.R = radius;
     this.center = center;
     this.angleZ = DEFAULT_SPHERE_ANGLE_DEG;
-  
+
     if (type === SPIRAL_SPHERE) {
       this.type = SPIRAL_SPHERE;
       this.generateSpiralSphere();
@@ -77,69 +101,73 @@ class Sphere {
     this.positions = new Array(3 * (this.DIV + 1) * (this.DIV + 1));
     this.indices = new Array(4 * this.DIV * this.DIV);
     let iterator = 0;
-  
+
     // Generate coordinates
     for (let j = 0; j <= this.DIV; ++j) {
       let phi = j * Math.PI / this.DIV;
       let sj = Math.sin(phi);
       let cj = Math.cos(phi);
-  
+
       for (let i = 0; i <= this.DIV; ++i) {
         let theta = 2 * i * Math.PI / this.DIV;
         let si = Math.sin(theta);
         let ci = Math.cos(theta);
-        
+
         this.positions[iterator++] = this.center.x + (this.R * ci * sj); // X
         this.positions[iterator++] = this.center.y + (this.R * si * sj); // Y
-        this.positions[iterator++] = this.center.z + (this.R * cj);      // Z
+        this.positions[iterator++] = this.center.z + (this.R * cj); // Z
       }
     }
-  
+
     iterator = 0;
-  
+
     // Generate indices (for *_STRIP methods)
     for (let j = 0; j < this.DIV; ++j) {
       for (let i = 0; i < this.DIV; ++i) {
         let p1 = j * (this.DIV + 1) + i;
         let p2 = p1 + (this.DIV + 1);
-  
+
         this.indices[iterator++] = p1;
         this.indices[iterator++] = p1 + 1;
-        this.indices[iterator++] = p2;
+
+        if (this.mode == DRAW_MODE.TRIANGLE_STRIP) {
+          this.indices[iterator++] = p2;
+        }
+
         this.indices[iterator++] = p2 + 1;
       }
     }
     return;
   }
-  
+
   generateSpiralSphere() {
     const N = this.DIV;
-  
+
     this.positions = new Array(3 * N);
     let iterator = 0;
-  
+
     // Generate coordinates
     let theta = 0;
-  
+
     for (let k = 1; k <= N; ++k) {
       let h = -1 + (2 * k - 2) / (N - 1);
       let phi = Math.acos(h);
-  
+
       let s_phi = Math.sin(phi);
       let c_phi = Math.cos(phi);
-  
-      theta = (theta + 3.8 / Math.sqrt(N * (1 - h * h)))// % (2 * Math.PI);
+
+      theta = (theta + 3.8 / Math.sqrt(N * (1 - h * h))) // % (2 * Math.PI);
       if (k == N || k == 1)
         theta = 0;
-  
+
       let s_theta = Math.sin(theta);
       let c_theta = Math.cos(theta);
-        
+
       this.positions[iterator++] = this.center.x + (this.R * s_phi * c_theta); // X
       this.positions[iterator++] = this.center.y + (this.R * s_phi * s_theta); // Y
-      this.positions[iterator++] = this.center.z + (this.R * c_phi);           // Z
+      this.positions[iterator++] = this.center.z + (this.R * c_phi); // Z
     }
-  
+
     // Generate indices (for POINTS method)
     this.indices = new Array(N);
     for (let i = 0; i < N; i++)
@@ -163,10 +191,47 @@ class Camera {
 class Graphic {
 
   constructor(sphere) { // TODO sphere to interface
+    this.canvas = document.getElementById('webgl');
+
     this.sphere = sphere;
     this.camera = new Camera();
 
-    this.canvas = document.getElementById('webgl');
+    // params needed for scene rotation by mouse movement
+    this.drag = false;
+    this.old_x;
+    this.old_y;
+    this.dX = 0;
+    this.dY = 0;
+    this.THETA = 0;
+    this.PHI = 0;
+
+    document.onmousedown = (e) => {
+      this.drag = true;
+      this.old_x = e.pageX;
+      this.old_y = e.pageY;
+      e.preventDefault();
+      return false;
+    };
+    document.onmouseup = (e) => {
+      this.drag = false;
+    };
+    document.onmousemove = (e) => {
+      if (!this.drag) return false;
+      this.dX = (e.pageX - this.old_x) * 2 * Math.PI / 10;
+      this.dY = (e.pageY - this.old_y) * 2 * Math.PI / 10;
+
+      this.THETA += this.dX;
+      this.PHI += this.dY;
+
+      this.THETA %= 360;
+      this.PHI %= 360;
+
+      this.old_x = e.pageX;
+      this.old_y = e.pageY;
+      e.preventDefault();
+    };
+    //
+
     this.gl = getWebGLContext(this.canvas);
     if (!this.gl) {
       console.error('Failed to get the rendering context for WebGL');
@@ -195,7 +260,7 @@ class Graphic {
     this.u_LightPosition = this.gl.getUniformLocation(this.gl.program, 'u_LightPosition');
     this.u_AmbientLight = this.gl.getUniformLocation(this.gl.program, 'u_AmbientLight');
 
-    if (!this.u_ModelMatrix || !this.u_NormalMatrix || !this.u_MvpMatrix || !this.u_LightColor || !this.u_LightPosition　|| !this.u_AmbientLight) { 
+    if (!this.u_ModelMatrix || !this.u_NormalMatrix || !this.u_MvpMatrix || !this.u_LightColor || !this.u_LightPosition || !this.u_AmbientLight) {
       console.error('Failed to get the storage location');
       return;
     }
@@ -208,7 +273,7 @@ class Graphic {
 
   initVertexBuffersForSphere() {
     if (!this.initArrayBuffer('a_Position', new Float32Array(this.sphere.positions), this.gl.FLOAT, 3)) return false;
-    if (!this.initArrayBuffer('a_Normal', new Float32Array(this.sphere.positions), this.gl.FLOAT, 3))  return false;
+    if (!this.initArrayBuffer('a_Normal', new Float32Array(this.sphere.positions), this.gl.FLOAT, 3)) return false;
 
     let indexBuffer = this.gl.createBuffer();
     if (!indexBuffer) {
@@ -249,12 +314,13 @@ class Graphic {
     let mvpMatrix = new Matrix4();
     let normalMatrix = new Matrix4();
 
-    modelMatrix.setRotate(this.sphere.angleZ, 0, 0, 1); // Rotate around the z-axis
+    modelMatrix.setRotate(this.THETA, 0, 0, 1); // Rotate around the y-axis
+    modelMatrix.rotate(this.PHI, 0, 1, 0); // Rotate around the x-axis
 
     mvpMatrix.setPerspective(30, this.canvas.width / this.canvas.height, 1, 100);
     mvpMatrix.lookAt(
-      this.camera.pos.x, this.camera.pos.y, this.camera.pos.z, 
-      this.camera.lookAt.x, this.camera.lookAt.y, this.camera.lookAt.z, 
+      this.camera.pos.x, this.camera.pos.y, this.camera.pos.z,
+      this.camera.lookAt.x, this.camera.lookAt.y, this.camera.lookAt.z,
       this.camera.up.x, this.camera.up.y, this.camera.up.z);
     mvpMatrix.multiply(modelMatrix);
 
@@ -269,17 +335,32 @@ class Graphic {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
     this.gl.getExtension('OES_element_index_uint'); // for UNSIGNED_INT support
-    //this.gl.drawElements(this.gl.LINE_STRIP, this.vertex_n, this.gl.UNSIGNED_INT, 0);
-    this.gl.drawElements(this.gl.POINTS, this.vertex_n, this.gl.UNSIGNED_INT, 0);
+
+    switch(this.sphere.mode) {
+    case DRAW_MODE.POINTS:
+      this.gl.drawElements(this.gl.POINTS, this.vertex_n, this.gl.UNSIGNED_INT, 0);
+      break;
+    case DRAW_MODE.LINE_STRIP:
+      this.gl.drawElements(this.gl.LINE_STRIP, this.vertex_n, this.gl.UNSIGNED_INT, 0);
+      break;
+    case DRAW_MODE.TRIANGLE_STRIP:
+      this.gl.drawElements(this.gl.TRIANGLE_STRIP, this.vertex_n, this.gl.UNSIGNED_INT, 0);
+      break;
+    }
 
     return;
   }
 
+  updateState() {
+    //this.camera.updateState();
+  }
+
   tick() {
-    console.log("drawing...")
-    //updateState();
+    this.updateState();
     this.draw();
-    requestAnimationFrame(() => {this.tick()});
+    requestAnimationFrame(() => {
+      this.tick()
+    });
 
     return;
   }
@@ -288,9 +369,9 @@ class Graphic {
 
 
 function main() {
-  //let sphere = new Sphere(SPIRAL_SPHERE, 100000, 1, {x:0, y:0, z:0});
-  let sphere = new Sphere(CLASSIC_SPHERE, 500, 1, {x:0, y:0, z:0});
+  let sphere = new Sphere(SPIRAL_SPHERE, DRAW_MODE.LINE_STRIP, 1000, 1, {x:0, y:0, z:0});
+  //let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 25, 1, {x:0, y:0, z:0});
 
   let graphic = new Graphic(sphere);
-  graphic.draw();
+  graphic.tick();
 }
