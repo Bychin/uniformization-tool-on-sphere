@@ -1,6 +1,6 @@
 const VSHADER_SOURCE = `
   attribute vec4 a_Position;
-  // 'attribute vec4 a_Color;
+  attribute vec4 a_Color;
   attribute vec4 a_Normal;
   uniform mat4 u_MvpMatrix;
   uniform mat4 u_ModelMatrix; // Model matrix
@@ -9,8 +9,8 @@ const VSHADER_SOURCE = `
   varying vec3 v_Normal;
   varying vec3 v_Position;
   void main() {
-    gl_PointSize = 1.0; // TODO
-    vec4 color = vec4(0.8, 0.2, 0.2, 1); // Sphere color
+    gl_PointSize = 2.; // TODO
+    vec4 color = a_Color;
     gl_Position = u_MvpMatrix * a_Position;
     // Calculate the vertex position in the world coordinate
     v_Position = vec3(u_ModelMatrix * a_Position);
@@ -45,6 +45,11 @@ const FSHADER_SOURCE = `
 const SPIRAL_SPHERE = 'spiral';
 const CLASSIC_SPHERE = 'classic';
 
+const SPHERE_COLOR = [0.8, 0.2, 0.2, 0.4];
+const POINTS_COLOR = [0., 0., 0., 1.]
+
+const DEFAULT_SPHERE_ANGLE_DEG = 0;
+
 
 const DRAW_MODE = {
   POINTS: 'points',
@@ -52,7 +57,6 @@ const DRAW_MODE = {
   TRIANGLE_STRIP: 'triangle_strip'
 }
 
-const DEFAULT_SPHERE_ANGLE_DEG = 0;
 
 const DEFAULT_CAMERA_POS = {
   x: 10,
@@ -79,6 +83,7 @@ class Sphere {
 
   constructor(type, mode, div, radius, center) {
     this.mode = mode;
+    this.color = SPHERE_COLOR;
 
     this.DIV = div;
     this.R = radius;
@@ -99,7 +104,7 @@ class Sphere {
 
   generateClassicSphere() {
     this.positions = new Array(3 * (this.DIV + 1) * (this.DIV + 1));
-    this.indices = new Array(4 * this.DIV * this.DIV);
+    this.indices = this.mode == DRAW_MODE.TRIANGLE_STRIP ? new Array(4 * this.DIV * this.DIV) : new Array(3 * this.DIV * this.DIV);
     let iterator = 0;
 
     // Generate coordinates
@@ -156,7 +161,7 @@ class Sphere {
       let s_phi = Math.sin(phi);
       let c_phi = Math.cos(phi);
 
-      theta = (theta + 3.8 / Math.sqrt(N * (1 - h * h))) // % (2 * Math.PI);
+      theta = (theta + 3.8 / Math.sqrt(N * (1 - h * h))) % (2 * Math.PI);
       if (k == N || k == 1)
         theta = 0;
 
@@ -193,6 +198,8 @@ class Graphic {
   constructor(sphere) { // TODO sphere to interface
     this.canvas = document.getElementById('webgl');
 
+    this.points = undefined;
+    this.isolines = undefined;
     this.sphere = sphere;
     this.camera = new Camera();
 
@@ -243,15 +250,6 @@ class Graphic {
       return;
     }
 
-    if (!this.initVertexBuffersForSphere()) {
-      console.error('Failed to set the vertex information');
-      return;
-    }
-    this.vertex_n = this.sphere.indices.length
-
-    this.gl.clearColor(1, 1, 1, 1)
-    this.gl.enable(this.gl.DEPTH_TEST);
-
     this.u_ModelMatrix = this.gl.getUniformLocation(this.gl.program, 'u_ModelMatrix');
     this.u_MvpMatrix = this.gl.getUniformLocation(this.gl.program, 'u_MvpMatrix');
     this.u_NormalMatrix = this.gl.getUniformLocation(this.gl.program, 'u_NormalMatrix');
@@ -268,12 +266,32 @@ class Graphic {
     this.gl.uniform3f(this.u_LightColor, 0.8, 0.8, 0.8); // Set the light color (white)
     this.gl.uniform3f(this.u_LightPosition, 5.0, 8.0, 7.0); // Set the light direction (in the world coordinate)
     this.gl.uniform3f(this.u_AmbientLight, 0.2, 0.2, 0.2); // Set the ambient light
+
+    //this.gl.clearDepth(0.5);
+    this.gl.enable(this.gl.DEPTH_TEST);
+    this.gl.depthFunc(this.gl.LEQUAL);
+
     return;
   }
 
-  initVertexBuffersForSphere() {
-    if (!this.initArrayBuffer('a_Position', new Float32Array(this.sphere.positions), this.gl.FLOAT, 3)) return false;
-    if (!this.initArrayBuffer('a_Normal', new Float32Array(this.sphere.positions), this.gl.FLOAT, 3)) return false;
+  setupPoints(positions) {
+    this.points = {
+      positions: positions,
+      indices: [...Array(positions.length / 3).keys()],
+      color: POINTS_COLOR,
+      mode: DRAW_MODE.POINTS
+    };
+  }
+
+  initVertexBuffersForObject(object) {
+    if (!this.initArrayBuffer('a_Position', new Float32Array(object.positions), this.gl.FLOAT, 3)) return false;
+    if (!this.initArrayBuffer('a_Normal', new Float32Array(object.positions), this.gl.FLOAT, 3)) return false;
+
+    let colorArray = new Float32Array(object.indices.length * 4);
+    for (let i = 0; i < colorArray.length; ++i) {
+      colorArray[i] = object.color[i % 4];
+    }
+    if (!this.initArrayBuffer('a_Color', colorArray, this.gl.FLOAT, 4)) return false;
 
     let indexBuffer = this.gl.createBuffer();
     if (!indexBuffer) {
@@ -281,7 +299,7 @@ class Graphic {
       return false;
     }
     this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(this.sphere.indices), this.gl.STATIC_DRAW);
+    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(object.indices), this.gl.STATIC_DRAW);
 
     return true;
   }
@@ -309,7 +327,20 @@ class Graphic {
     return true;
   }
 
-  draw() {
+  clear() {
+    this.gl.clearColor(1, 1, 1, 1)
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+  }
+
+  // object must have positions array with 3-dimensional coordinates, indices array, color array and mode property (1 of DRAW_MODE constant)
+  draw(object) {
+    this.gl.clear(this.gl.DEPTH_BUFFER_BIT)
+
+    if (!this.initVertexBuffersForObject(object)) {
+      console.error('Failed to set the vertex information');
+      return;
+    }
+
     let modelMatrix = new Matrix4();
     let mvpMatrix = new Matrix4();
     let normalMatrix = new Matrix4();
@@ -331,20 +362,18 @@ class Graphic {
     this.gl.uniformMatrix4fv(this.u_MvpMatrix, false, mvpMatrix.elements);
     this.gl.uniformMatrix4fv(this.u_NormalMatrix, false, normalMatrix.elements);
 
-    this.gl.clearColor(1, 1, 1, 1)
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-
     this.gl.getExtension('OES_element_index_uint'); // for UNSIGNED_INT support
 
-    switch(this.sphere.mode) {
+    let vertex_n = object.indices.length
+    switch(object.mode) {
     case DRAW_MODE.POINTS:
-      this.gl.drawElements(this.gl.POINTS, this.vertex_n, this.gl.UNSIGNED_INT, 0);
+      this.gl.drawElements(this.gl.POINTS, vertex_n, this.gl.UNSIGNED_INT, 0);
       break;
     case DRAW_MODE.LINE_STRIP:
-      this.gl.drawElements(this.gl.LINE_STRIP, this.vertex_n, this.gl.UNSIGNED_INT, 0);
+      this.gl.drawElements(this.gl.LINE_STRIP, vertex_n, this.gl.UNSIGNED_INT, 0);
       break;
     case DRAW_MODE.TRIANGLE_STRIP:
-      this.gl.drawElements(this.gl.TRIANGLE_STRIP, this.vertex_n, this.gl.UNSIGNED_INT, 0);
+      this.gl.drawElements(this.gl.TRIANGLE_STRIP, vertex_n, this.gl.UNSIGNED_INT, 0);
       break;
     }
 
@@ -357,7 +386,13 @@ class Graphic {
 
   tick() {
     this.updateState();
-    this.draw();
+    this.clear();
+
+    this.draw(this.sphere);
+    if (this.points) {
+      this.draw(this.points);
+    }
+
     requestAnimationFrame(() => {
       this.tick()
     });
@@ -368,10 +403,10 @@ class Graphic {
 }
 
 
-function main() {
-  let sphere = new Sphere(SPIRAL_SPHERE, DRAW_MODE.LINE_STRIP, 1000, 1, {x:0, y:0, z:0});
-  //let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 25, 1, {x:0, y:0, z:0});
+//let sphere = new Sphere(SPIRAL_SPHERE, DRAW_MODE.LINE_STRIP, 1000, 1, {x:0, y:0, z:0});
+let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 25, 1, {x:0, y:0, z:0});
+let graphic = new Graphic(sphere);
 
-  let graphic = new Graphic(sphere);
+function main() {
   graphic.tick();
 }
