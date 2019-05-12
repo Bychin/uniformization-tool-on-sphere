@@ -9,7 +9,7 @@ const VSHADER_SOURCE = `
   varying vec3 v_Normal;
   varying vec3 v_Position;
   void main() {
-    gl_PointSize = 2.; // TODO
+    gl_PointSize = 3.5; // TODO
     vec4 color = a_Color;
     gl_Position = u_MvpMatrix * a_Position;
     // Calculate the vertex position in the world coordinate
@@ -45,8 +45,12 @@ const FSHADER_SOURCE = `
 const SPIRAL_SPHERE = 'spiral';
 const CLASSIC_SPHERE = 'classic';
 
-const SPHERE_COLOR = [0.8, 0.2, 0.2, 0.4];
-const POINTS_COLOR = [0., 0., 0., 1.]
+const SPHERE_COLOR = [1., 0.2, 0.2, 0.5];
+const POINTS_COLOR = [0., 0., 0., 1.];
+
+const LIGHT_COLOR = [0.8, 0.8, 0.8];
+const LIGHT_POS = [-5.0, 0.0, -2.0];
+const AMBIENT_LIGHT = [0.2, 0.2, 0.2];
 
 const DEFAULT_SPHERE_ANGLE_DEG = 0;
 
@@ -59,7 +63,7 @@ const DRAW_MODE = {
 
 
 const DEFAULT_CAMERA_POS = {
-  x: 10,
+  x: 5,
   y: 0,
   z: 0
 }
@@ -198,8 +202,8 @@ class Graphic {
   constructor(sphere) { // TODO sphere to interface
     this.canvas = document.getElementById('webgl');
 
-    this.points = undefined;
-    this.isolines = undefined;
+    this.points = null;
+    this.isolines = [];
     this.sphere = sphere;
     this.camera = new Camera();
 
@@ -212,17 +216,17 @@ class Graphic {
     this.THETA = 0;
     this.PHI = 0;
 
-    document.onmousedown = (e) => {
+    this.canvas.onmousedown = (e) => {
       this.drag = true;
       this.old_x = e.pageX;
       this.old_y = e.pageY;
       e.preventDefault();
       return false;
     };
-    document.onmouseup = (e) => {
+    this.canvas.onmouseup = (e) => {
       this.drag = false;
     };
-    document.onmousemove = (e) => {
+    this.canvas.onmousemove = (e) => {
       if (!this.drag) return false;
       this.dX = (e.pageX - this.old_x) * 2 * Math.PI / 10;
       this.dY = (e.pageY - this.old_y) * 2 * Math.PI / 10;
@@ -263,13 +267,13 @@ class Graphic {
       return;
     }
 
-    this.gl.uniform3f(this.u_LightColor, 0.8, 0.8, 0.8); // Set the light color (white)
-    this.gl.uniform3f(this.u_LightPosition, 5.0, 8.0, 7.0); // Set the light direction (in the world coordinate)
-    this.gl.uniform3f(this.u_AmbientLight, 0.2, 0.2, 0.2); // Set the ambient light
+    this.gl.uniform3f(this.u_LightColor, ...LIGHT_COLOR);
+    this.gl.uniform3f(this.u_LightPosition, ...LIGHT_POS);
+    this.gl.uniform3f(this.u_AmbientLight, ...AMBIENT_LIGHT);
 
     //this.gl.clearDepth(0.5);
     this.gl.enable(this.gl.DEPTH_TEST);
-    this.gl.depthFunc(this.gl.LEQUAL);
+    //this.gl.depthFunc(this.gl.LEQUAL);
 
     return;
   }
@@ -392,6 +396,11 @@ class Graphic {
     if (this.points) {
       this.draw(this.points);
     }
+    if (this.isolines.length) {
+      this.isolines.forEach(
+        (line) => {this.draw(line)}
+      )
+    }
 
     requestAnimationFrame(() => {
       this.tick()
@@ -403,8 +412,8 @@ class Graphic {
 }
 
 
-//let sphere = new Sphere(SPIRAL_SPHERE, DRAW_MODE.LINE_STRIP, 1000, 1, {x:0, y:0, z:0});
-let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 25, 1, {x:0, y:0, z:0});
+//let sphere = new Sphere(SPIRAL_SPHERE, DRAW_MODE.POINTS, 100000, 1, {x:0, y:0, z:0});
+let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 46, 1, {x:0, y:0, z:0});
 let graphic = new Graphic(sphere);
 
 function main() {

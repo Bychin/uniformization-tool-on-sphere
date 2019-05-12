@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Sphere</title>
+  <link rel="stylesheet" href="./sphere.css">
+</head>
+
+<body onload="main()">
+  <div class="canvas">
+    <canvas id="webgl" width="600" height="600">
+      Please use a browser that supports "canvas"
+    </canvas>
+  </div>
+
+  <div class="parameters">
+    <fieldset>
+      <legend>Statistics</legend>
+      <fieldset>
+        <legend>Points</legend>
+        <input type="file" id="pointsFile"/>
+        <button id="uploadPointsButton" onclick="uploadPointsFile()">Upload and draw</button>
+      </fieldset>
+      <fieldset>
+        <legend>Ang. Gaussian distribution</legend>
+        <fieldset>
+          <legend>Mean vector</legend>
+          <div>
+            <label for="meanX">X:</label>
+            <input type="text" id="meanX" value="0" maxlength="20" size="3"/>
+            <label for="meanY">Y:</label>
+            <input type="text" id="meanY" value="0" maxlength="20" size="3"/>
+            <label for="meanZ">Z:</label>
+            <input type="text" id="meanZ" value="10" maxlength="20" size="3"/>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Cov matrix</legend>
+          <div>
+            <input type="text" id="cov11" value="1" maxlength="20" size="6"/>
+            <input type="text" id="cov12" value="0" maxlength="20" size="6"/>
+            <input type="text" id="cov13" value="0" maxlength="20" size="6"/>
+          </div>
+          <div>
+            <input type="text" id="cov21" value="0" maxlength="20" size="6" disabled/>
+            <input type="text" id="cov22" value="1" maxlength="20" size="6"/>
+            <input type="text" id="cov23" value="0" maxlength="20" size="6"/>
+          </div>
+          <div>
+            <input type="text" id="cov31" value="0" maxlength="20" size="6" disabled/>
+            <input type="text" id="cov32" value="0" maxlength="20" size="6" disabled/>
+            <input type="text" id="cov33" value="1" maxlength="20" size="6"/>
+          </div>
+        </fieldset>
+        <button id="uploadAGDButton" onclick="uploadAGD()">Upload and draw isolines</button>
+      </fieldset>
+      <br/>
+      <fieldset>
+        <legend>Calculations</legend>
+      </fieldset>
+    </fieldset>
+  </div>
+
+  <script src="../lib/webgl-utils.js"></script>
+  <script src="../lib/webgl-debug.js"></script>
+  <script src="../lib/cuon-utils.js"></script>
+  <script src="../lib/cuon-matrix.js"></script>
+
+  <script src="./distribution.js"></script>
+  <script src="./points.js"></script>
+  <script src="./sphere.js"></script>
+</body>
+
+</html>

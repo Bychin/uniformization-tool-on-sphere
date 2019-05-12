@@ -1,12 +1,9 @@
-let pointsFile = document.getElementById("pointsFile");
-let uploadPointsButton = document.getElementById("uploadPointsButton");
-
 function uploadPointsFile() {
     if (!window.FileReader) {
         alert("Your browser is not supported")
     }
 
-    let input = pointsFile;
+    let input = document.getElementById("pointsFile");
     let reader = new FileReader();
     if (input.files.length) {
         let textFile = input.files[0];
