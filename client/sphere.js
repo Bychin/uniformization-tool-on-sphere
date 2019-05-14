@@ -412,7 +412,8 @@ class Graphic {
 }
 
 
-//let sphere = new Sphere(SPIRAL_SPHERE, DRAW_MODE.POINTS, 100000, 1, {x:0, y:0, z:0});
+let spiralSphere = new Sphere(SPIRAL_SPHERE, DRAW_MODE.POINTS, 100000, 1, {x:0, y:0, z:0});
+
 let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 46, 1, {x:0, y:0, z:0});
 let graphic = new Graphic(sphere);
 
