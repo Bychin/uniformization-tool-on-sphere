@@ -40,8 +40,9 @@ function prepareIsolineAPIQuery(ratio) {
 
     let meanStr = mean.join(',');
     let covStr = covMatrix.join(',');
+    let ratios = ISOLINE_AREA_RATIO.join(',')
 
-    return SERVER_URL + ISOLINE_API + `?mean=${meanStr}&cov=${covStr}&ratio=${ratio}`;
+    return SERVER_URL + ISOLINE_API + `?mean=${meanStr}&cov=${covStr}&ratio=${ratios}`;
 }
 
 function uploadAGD() {
@@ -59,5 +60,11 @@ function uploadAGD() {
 
         let jsonResponse = JSON.parse(xhr.responseText);
         console.log(jsonResponse)
+        let isolinesDict = jsonResponse.isolines;
+        let isolines = []
+        for (let ratio in isolinesDict) {
+            isolines.push(isolinesDict[ratio].flat());
+        }
+        graphic.setupIsolines(isolines);
     }
 }

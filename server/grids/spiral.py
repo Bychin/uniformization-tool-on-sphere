@@ -4,11 +4,13 @@ import numpy as np
 
 class SpiralGrid:
     def __init__(self, N, function):
-        self.points = self.__generateGrid(N)
-        self.function = self.__calculateFunc(function)
+        self.__generateGrid(N)
+        self.__calculateFunc(function)
+
+        self.k = 4 * math.pi / N  # Area of an elementary part of a sphere for every grid value
 
     def __generateGrid(self, N):
-        points = []
+        self.points = []
         theta = 0
 
         for k in range(1, N+1):
@@ -30,9 +32,12 @@ class SpiralGrid:
             y = s_phi * s_theta
             z = c_phi
 
-            points.append((x, y, z))
-
-        return points
+            self.points.append((x, y, z))
 
     def __calculateFunc(self, function):
-        return {point : function(point) for point in self.points}
+        self.function = {point : function(point) for point in self.points}  # TODO values
+        self.data = np.fromiter(self.function.values(), dtype=float)
+
+    def calculateIntegralInsideIsoline(self, c):
+        valuesInsideIsoline = np.array(list(filter(lambda x: x > c, self.data))) #self.data[self.data > c]
+        return np.mean(valuesInsideIsoline) * self.k * len(valuesInsideIsoline)

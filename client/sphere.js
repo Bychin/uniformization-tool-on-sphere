@@ -47,6 +47,7 @@ const CLASSIC_SPHERE = 'classic';
 
 const SPHERE_COLOR = [1., 0.2, 0.2, 0.5];
 const POINTS_COLOR = [0., 0., 0., 1.];
+const ISOLINES_COLOR = [0., 0., 0., 1.];
 
 const LIGHT_COLOR = [0.8, 0.8, 0.8];
 const LIGHT_POS = [-5.0, 0.0, -2.0];
@@ -287,6 +288,19 @@ class Graphic {
     };
   }
 
+  setupIsolines(isolines) {
+    this.isolines = []
+
+    for (let isoline of isolines) {
+      this.isolines.push({
+        positions: isoline,
+        indices: [...Array(isoline.length / 3).keys()],
+        color: ISOLINES_COLOR,
+        mode: DRAW_MODE.LINE_STRIP
+      })
+    }
+  }
+
   initVertexBuffersForObject(object) {
     if (!this.initArrayBuffer('a_Position', new Float32Array(object.positions), this.gl.FLOAT, 3)) return false;
     if (!this.initArrayBuffer('a_Normal', new Float32Array(object.positions), this.gl.FLOAT, 3)) return false;
@@ -414,7 +428,7 @@ class Graphic {
 
 let spiralSphere = new Sphere(SPIRAL_SPHERE, DRAW_MODE.POINTS, 100000, 1, {x:0, y:0, z:0});
 
-let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 46, 1, {x:0, y:0, z:0});
+let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 60, 1, {x:0, y:0, z:0});
 let graphic = new Graphic(sphere);
 
 function main() {
