@@ -2,6 +2,9 @@ import math
 import numpy as np
 
 
+SPIRAL_GRID_POINTS = 100000
+
+
 class SpiralGrid:
     def __init__(self, N, function):
         self.__generateGrid(N)
@@ -35,9 +38,10 @@ class SpiralGrid:
             self.points.append((x, y, z))
 
     def __calculateFunc(self, function):
-        self.function = {point : function(point) for point in self.points}  # TODO values
-        self.data = np.fromiter(self.function.values(), dtype=float)
+        self.function = function
+        self.values = {point : function(point) for point in self.points}
+        self.data = np.fromiter(self.values.values(), dtype=float)
 
     def calculateIntegralInsideIsoline(self, c):
-        valuesInsideIsoline = np.array(list(filter(lambda x: x > c, self.data))) #self.data[self.data > c]
+        valuesInsideIsoline = np.array(list(filter(lambda x: x > c, self.data)))
         return np.mean(valuesInsideIsoline) * self.k * len(valuesInsideIsoline)

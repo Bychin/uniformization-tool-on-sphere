@@ -59,6 +59,7 @@ const DEFAULT_SPHERE_ANGLE_DEG = 0;
 const DRAW_MODE = {
   POINTS: 'points',
   LINE_STRIP: 'line_strip',
+  LINE_LOOP: 'line_loop',
   TRIANGLE_STRIP: 'triangle_strip'
 }
 
@@ -272,9 +273,7 @@ class Graphic {
     this.gl.uniform3f(this.u_LightPosition, ...LIGHT_POS);
     this.gl.uniform3f(this.u_AmbientLight, ...AMBIENT_LIGHT);
 
-    //this.gl.clearDepth(0.5);
     this.gl.enable(this.gl.DEPTH_TEST);
-    //this.gl.depthFunc(this.gl.LEQUAL);
 
     return;
   }
@@ -296,7 +295,7 @@ class Graphic {
         positions: isoline,
         indices: [...Array(isoline.length / 3).keys()],
         color: ISOLINES_COLOR,
-        mode: DRAW_MODE.LINE_STRIP
+        mode: DRAW_MODE.LINE_LOOP
       })
     }
   }
@@ -351,6 +350,7 @@ class Graphic {
   }
 
   // object must have positions array with 3-dimensional coordinates, indices array, color array and mode property (1 of DRAW_MODE constant)
+  // TODO special check?
   draw(object) {
     this.gl.clear(this.gl.DEPTH_BUFFER_BIT)
 
@@ -390,6 +390,9 @@ class Graphic {
     case DRAW_MODE.LINE_STRIP:
       this.gl.drawElements(this.gl.LINE_STRIP, vertex_n, this.gl.UNSIGNED_INT, 0);
       break;
+    case DRAW_MODE.LINE_LOOP:
+      this.gl.drawElements(this.gl.LINE_LOOP, vertex_n, this.gl.UNSIGNED_INT, 0);
+      break;
     case DRAW_MODE.TRIANGLE_STRIP:
       this.gl.drawElements(this.gl.TRIANGLE_STRIP, vertex_n, this.gl.UNSIGNED_INT, 0);
       break;
@@ -399,11 +402,11 @@ class Graphic {
   }
 
   updateState() {
-    //this.camera.updateState();
+
   }
 
   tick() {
-    this.updateState();
+    // this.updateState();
     this.clear();
 
     this.draw(this.sphere);
@@ -422,15 +425,4 @@ class Graphic {
 
     return;
   }
-
-}
-
-
-let spiralSphere = new Sphere(SPIRAL_SPHERE, DRAW_MODE.POINTS, 100000, 1, {x:0, y:0, z:0});
-
-let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 60, 1, {x:0, y:0, z:0});
-let graphic = new Graphic(sphere);
-
-function main() {
-  graphic.tick();
 }

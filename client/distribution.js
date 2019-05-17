@@ -1,9 +1,3 @@
-const SERVER_URL = "http://127.0.0.1:8080"
-const ISOLINE_API = "/api/isoline"
-
-const ISOLINE_AREA_RATIO = [0.9, 0.7, 0.5, 0.3, 0.1];
-
-
 // "1/5" -> "0.2"
 function convertFraction(numRaw) {
     if (!numRaw.includes('/')) {
@@ -50,7 +44,6 @@ function uploadAGD() {
     let xhr = new XMLHttpRequest();
 
     xhr.open("GET", url);
-    xhr.send();
     xhr.onreadystatechange = () => {
         if (xhr.readyState != 4) return;
         if (xhr.status != 200) {
@@ -59,7 +52,6 @@ function uploadAGD() {
         }
 
         let jsonResponse = JSON.parse(xhr.responseText);
-        console.log(jsonResponse)
         let isolinesDict = jsonResponse.isolines;
         let isolines = []
         for (let ratio in isolinesDict) {
@@ -67,4 +59,10 @@ function uploadAGD() {
         }
         graphic.setupIsolines(isolines);
     }
+
+    xhr.send();
+}
+
+function clearAGD() {
+    graphic.setupIsolines([]);
 }

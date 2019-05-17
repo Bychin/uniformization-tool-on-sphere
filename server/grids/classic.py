@@ -2,6 +2,9 @@ import math
 import numpy as np
 
 
+CLASSIC_GRID_DIV = 360
+
+
 class ClassicGrid:
     def __init__(self, div, function):
         self.div = div
@@ -51,6 +54,11 @@ class ClassicGrid:
 
             self.trapeziums.append(column)
 
+    # TODO
+    # refactor getIsolineCoords (break)
+    # refactor __processSegment
+    # rename index
+
     # getIsolineCoords returns points' coordinates for isoline with value 'c'.
     # It uses marching squares algorithm (https://en.wikipedia.org/wiki/Marching_squares)
     def getIsolineCoords(self, c):
@@ -60,7 +68,12 @@ class ClassicGrid:
         end_side = None
         end_point = None
 
+        stop = False
+
         for i in range(len(self.trapeziums)):
+            if stop:
+                break
+
             for j in range(len(self.trapeziums[i])):
                 trapezium = self.trapeziums[i][j]
                 index = self.__getTrapeziumIndex(trapezium, c)
@@ -69,18 +82,13 @@ class ClassicGrid:
                     end_side, end_point = self.__processSegment(trapezium, index, -1, c)
                     points.append(end_point)
                     initial_trapezium_indices = (i, j)
-                    break
 
-        #if end_side == 2:
-        #    print("end side 2")
-        #    print(end_point, initial_trapezium_indices, c, len(self.trapeziums), len(self.trapeziums[initial_trapezium_indices[1]]))
+                    stop = True
+                    break
 
         side, trapezium_indices = self.__getNextTrapeziumIndices(end_side, initial_trapezium_indices)
 
-        #print("here")
-
         while trapezium_indices != initial_trapezium_indices:
-            #print(trapezium_indices)
             trapezium = self.trapeziums[trapezium_indices[0]][trapezium_indices[1]]
             index = self.__getTrapeziumIndex(trapezium, c)
             side, point = self.__processSegment(trapezium, index, side, c)
@@ -91,7 +99,6 @@ class ClassicGrid:
 
 
     def __getNextTrapeziumIndices(self, prev_side, prev_trapezium_indices):
-        #print("__getNextTrapeziumIndices")
         if prev_side == 0:  # we must get the one above
             return 2, self.__getUpperTrapeziumIndices(prev_trapezium_indices)
 

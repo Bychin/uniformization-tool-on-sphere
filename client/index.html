@@ -21,6 +21,7 @@
         <legend>Points</legend>
         <input type="file" id="pointsFile"/>
         <button id="uploadPointsButton" onclick="uploadPointsFile()">Upload and draw</button>
+        <button id="clearPointsButton" onclick="clearPoints()">Clear points</button>
       </fieldset>
       <fieldset>
         <legend>Ang. Gaussian distribution</legend>
@@ -36,7 +37,7 @@
           </div>
         </fieldset>
         <fieldset>
-          <legend>Cov matrix</legend>
+          <legend>Covariance matrix</legend>
           <div>
             <input type="text" id="cov11" value="1" maxlength="20" size="6"/>
             <input type="text" id="cov12" value="0" maxlength="20" size="6"/>
@@ -53,11 +54,14 @@
             <input type="text" id="cov33" value="1" maxlength="20" size="6"/>
           </div>
         </fieldset>
-        <button id="uploadAGDButton" onclick="uploadAGD()">Upload and draw isolines</button>
+        <button id="uploadAGDButton" onclick="uploadAGD()">Upload and draw</button>
+        <button id="clearAGDButton" onclick="clearAGD()">Clear isolines</button>
       </fieldset>
       <br/>
       <fieldset>
         <legend>Calculations</legend>
+        <button id="getStatsButton" onclick="getStats()">Calculate statistics</button>
+        <div></div>
       </fieldset>
     </fieldset>
   </div>
@@ -70,6 +74,8 @@
   <script src="/distribution.js"></script>
   <script src="/points.js"></script>
   <script src="/sphere.js"></script>
+  <script src="/stats.js"></script>
+  <script src="/main.js"></script>
 </body>
 
 </html>

@@ -15,7 +15,7 @@ function uploadPointsFile() {
     } else {
         alert("Upload a file before continuing");
     }
-};
+}
 
 function processPointsFile(e) {
     let file = e.target.result;
@@ -35,6 +35,10 @@ function processPointsFile(e) {
     }
 
     graphic.setupPoints(positions);
+}
+
+function clearPoints() {
+    graphic.setupPoints([]);
 }
 
 // normalizePoint normalizes point in 3 dimensional space with X, Y, Z coordinates
