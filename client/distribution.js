@@ -26,6 +26,8 @@ function getDistributionParams() {
     covMatrix[5] = document.getElementById("cov33").value;
     covMatrix.forEach((c, i, arr) => {arr[i] = convertFraction(c)});
 
+    graphic.setupMeanPoint(mean);
+
     return [mean, covMatrix];
 }
 
@@ -51,8 +53,12 @@ function uploadAGD() {
             return;
         }
 
-        let jsonResponse = JSON.parse(xhr.responseText);
-        let isolinesDict = jsonResponse.isolines;
+        let resp = JSON.parse(xhr.responseText);
+        if (resp.code != 200) {
+            alert(resp.code + ': ' + resp.body);
+        }
+
+        let isolinesDict = resp.isolines;
         let isolines = []
         for (let ratio in isolinesDict) {
             isolines.push(isolinesDict[ratio].flat());

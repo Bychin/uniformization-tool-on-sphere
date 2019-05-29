@@ -27,6 +27,11 @@ class IsolineAPI(web.RequestHandler):
         #self.mean = tuple(x / length for x in self.mean)
         self.cov = tuple(float(cov) for cov in self.cov.split(','))
         # TODO len check
+        ''' psd check
+        def isPSD(A, tol=1e-8):
+            E,V = scipy.linalg.eigh(A)
+            return np.all(E > -tol)
+        '''
 
         self.ratios = [float(ratio) for ratio in self.ratios.split(',')]
         # TODO <1 etc checks
@@ -35,11 +40,11 @@ class IsolineAPI(web.RequestHandler):
         key = (self.mean, self.cov)
 
         if not (key in self.database):
-            distribution = Distribution(self.mean, self.cov)
+            self.distribution = Distribution(self.mean, self.cov)  # TODO put this to db, grids inside distr
 
             self.database[key] = (
-                SpiralGrid(SPIRAL_GRID_POINTS, distribution.calc),
-                ClassicGrid(CLASSIC_GRID_DIV, distribution.calc)
+                SpiralGrid(SPIRAL_GRID_POINTS, self.distribution.calc),
+                ClassicGrid(CLASSIC_GRID_DIV, self.distribution.calc)
             )
 
         self.spiral_grid, self.classic_grid = self.database[key]
@@ -49,7 +54,7 @@ class IsolineAPI(web.RequestHandler):
         f2 = np.max(self.spiral_grid.data)
         c = 0
 
-        integral = 10  # TODO
+        integral = 10  # TODO math inf
         eps = 0.001
         i = 0
         while math.fabs(integral - ratio) > eps:
@@ -94,5 +99,15 @@ class IsolineAPI(web.RequestHandler):
         except Exception as e:
             self.finish({"code": 500, "body": str(e)})
             return
+
+        ''' TODO manual pdf's max evaluation
+        max_v = 0
+        max_k = None
+        for k, v in self.spiral_grid.values.items():
+            if v > max_v:
+                max_v = v
+                max_k = k
+        print(max_k, max_v, self.spiral_grid.function([0,0,1]))
+        '''
 
         self.finish({"code": 200, "isolines": self.isolines})

@@ -9,5 +9,6 @@ let sphere = new Sphere(CLASSIC_SPHERE, DRAW_MODE.LINE_STRIP, 36, 1, {x:0, y:0, 
 let graphic = new Graphic(sphere);
 
 function main() {
+    graphic.setupCoordLines();
     graphic.tick();
 }

@@ -45,12 +45,12 @@ const FSHADER_SOURCE = `
 const SPIRAL_SPHERE = 'spiral';
 const CLASSIC_SPHERE = 'classic';
 
-const SPHERE_COLOR = [1., 0.2, 0.2, 0.5];
+const SPHERE_COLOR = [0.5, 0., 0., 0.4];
 const POINTS_COLOR = [0., 0., 0., 1.];
-const ISOLINES_COLOR = [0., 0., 0., 1.];
+const ISOLINES_COLOR = [0., 0., 0.9, 1.];
 
 const LIGHT_COLOR = [0.8, 0.8, 0.8];
-const LIGHT_POS = [-5.0, 0.0, -2.0];
+const LIGHT_POS = [5.0, 0.0, 0.5];
 const AMBIENT_LIGHT = [0.2, 0.2, 0.2];
 
 const DEFAULT_SPHERE_ANGLE_DEG = 0;
@@ -201,7 +201,7 @@ class Camera {
 
 class Graphic {
 
-  constructor(sphere) { // TODO sphere to interface
+  constructor(sphere) { // TODO sphere to setupSphere
     this.canvas = document.getElementById('webgl');
 
     this.points = null;
@@ -209,6 +209,11 @@ class Graphic {
     this.sphere = sphere;
     this.camera = new Camera();
 
+    this.fps = 30; // TODO move to config
+    this.fpsInterval = 1000 / this.fps;
+    this.time = Date.now();
+
+    // TODO refactor
     // params needed for scene rotation by mouse movement
     this.drag = false;
     this.old_x;
@@ -288,7 +293,7 @@ class Graphic {
   }
 
   setupIsolines(isolines) {
-    this.isolines = []
+    this.isolines = [];
 
     for (let isoline of isolines) {
       this.isolines.push({
@@ -296,8 +301,38 @@ class Graphic {
         indices: [...Array(isoline.length / 3).keys()],
         color: ISOLINES_COLOR,
         mode: DRAW_MODE.LINE_LOOP
-      })
+      });
     }
+  }
+
+  setupMeanPoint(point) {
+    let pointLen = Math.hypot(...point);
+    let normedPoint = point.map(x => x / pointLen);
+    this.meanPoint = {
+      positions: normedPoint,
+      indices: [0],
+      color: [1, 0, 0, 1],
+      mode: DRAW_MODE.POINTS
+    };
+  }
+
+  setupCoordLines() {
+    this.coordLines = {
+      positions: [1.3,0,0, 0,0,0, 0,1.3,0, 0,0,0, 0,0,1.3],
+      indices: [0, 1, 2, 3, 4],
+      color: ISOLINES_COLOR,
+      mode: DRAW_MODE.LINE_STRIP
+    };
+  }
+
+  // TODO remove (debug)
+  setupMorePoints(positions) {
+    this.morePoints = {
+      positions: positions,
+      indices: [...Array(positions.length / 3).keys()],
+      color: [0,1,0,1],
+      mode: DRAW_MODE.POINTS
+    };
   }
 
   initVertexBuffersForObject(object) {
@@ -401,28 +436,35 @@ class Graphic {
     return;
   }
 
-  updateState() {
-
-  }
-
-  tick() {
-    // this.updateState();
+  drawScene() {
     this.clear();
 
     this.draw(this.sphere);
+    if (this.coordLines) {
+      this.draw(this.coordLines);
+    }
     if (this.points) {
       this.draw(this.points);
     }
     if (this.isolines.length) {
-      this.isolines.forEach(
-        (line) => {this.draw(line)}
-      )
+      this.isolines.forEach((line) => this.draw(line));
     }
+    if (this.meanPoint) {
+      this.draw(this.meanPoint);
+    }
+    if (this.morePoints) { // TODO remove (debug)
+      this.draw(this.morePoints);
+    }
+  }
 
-    requestAnimationFrame(() => {
-      this.tick()
-    });
+  tick() {
+    requestAnimationFrame(() => this.tick());
 
-    return;
+    let time = Date.now();
+    let elapsed = time - this.time;
+    if (elapsed > this.fpsInterval) {
+      this.drawScene();
+      this.time = time - (elapsed % this.fpsInterval);
+    }
   }
 }
