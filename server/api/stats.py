@@ -51,6 +51,7 @@ class StatsAPI(web.RequestHandler):
     def __distanceBetweenPoints(self, a, b):
         return math.sqrt(np.sum([(a[i] - b[i]) ** 2 for i in range(3)]))
 
+    # TODO move/rename all methods below?
     def __insertPointIntoIsoline(self, point, isoline_points):
         point_index = None
 
@@ -68,14 +69,58 @@ class StatsAPI(web.RequestHandler):
 
         return point_index, isoline_points
 
+    def __getNormalizedVector(self, point_a, point_b):
+        vector = [point_b[i] - point_a[i] for i in range(len(point_a))]
+        vector_len = np.linalg.norm(vector)
+        return [x / vector_len for x in vector]
+
+    def __getPrevIndexOfIsolinePoint(self, point_index, isoline_points):
+        if point_index == 0:
+            return len(isoline_points) - 1
+        return point_index - 1
+
+    def __getNextIndexOfIsolinePoint(self, point_index, isoline_points):
+        if point_index == len(isoline_points) - 1:
+            return 0
+        return point_index + 1
+
+    # TODO comments!
+    def __checkClockwiseDirection(self, M_vector, I_vector, A_vector):
+        AI_vector = np.cross(A_vector, I_vector)
+        AI_proj_on_M = np.dot(AI_vector, M_vector)
+
+        if AI_proj_on_M > 0:
+            return True
+        return False
+
+    # TODO gradient
+    def __calcIntegralOnFullIsoline(self, isoline_points):
+        integral = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(len(isoline_points) - 1)])
+        return integral + self.__distanceBetweenPoints(isoline_points[len(isoline_points) - 1], isoline_points[0])
+
+    def __calcIntegralOnCurveOnIsolineLeft(self, isoline_points, start_index, end_index):
+        if end_index < start_index:
+            return np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(end_index, start_index)])
+        
+        first_part = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(start_index)])
+        second_part = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(end_index, len(isoline_points) - 1)])
+        return first_part + second_part + self.__distanceBetweenPoints(isoline_points[len(isoline_points) - 1], isoline_points[0])
+
+    def __calcIntegralOnCurveOnIsolineRight(self, isoline_points, start_index, end_index):
+        if start_index < end_index:
+            return np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(start_index, end_index)])
+        
+        first_part = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(end_index)])
+        second_part = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(start_index, len(isoline_points) - 1)])
+        return first_part + second_part + self.__distanceBetweenPoints(isoline_points[len(isoline_points) - 1], isoline_points[0])
+
     def __calculateSStats(self, point, value):
         isoline_points = self.classic_grid.getIsolineCoords(value)
         point_index, isoline_points = self.__insertPointIntoIsoline(point, isoline_points)
 
         theta, phi = self.classic_grid.getAnglesOfPoint(point)
 
-        mean_len = np.linalg.norm(self.mean)
-        mean_normed = [x / mean_len for x in self.mean]
+        mean_normed = self.__getNormalizedVector([0, 0, 0], self.mean)
         theta_mean, phi_mean = self.classic_grid.getAnglesOfPoint(mean_normed)  # TODO change mean with actual pdf's maximum
         if mean_normed[0] == 0 and mean_normed[1] == 0:  # if mean vector points to one of the poles
             theta_mean = 0
@@ -109,7 +154,21 @@ class StatsAPI(web.RequestHandler):
 
         intersection_point_index, isoline_points = self.__insertPointIntoIsoline(intersection_point_coords, isoline_points)
 
-        return {"isoline": isoline_points, "points": [intersection_point_coords]}
+        A_point = isoline_points[self.__getNextIndexOfIsolinePoint(intersection_point_index, isoline_points)]
+        A_vector = self.__getNormalizedVector(mean_normed, A_point)
+        I_vector = self.__getNormalizedVector(mean_normed, intersection_point_coords)
+
+        isoline_integral = self.__calcIntegralOnFullIsoline(isoline_points)
+        curve_integral = 0
+        if self.__checkClockwiseDirection(mean_normed, I_vector, A_vector):
+            # TODO check direction
+            curve_integral = self.__calcIntegralOnCurveOnIsolineRight(isoline_points, intersection_point_index, point_index)
+        else:
+            curve_integral = self.__calcIntegralOnCurveOnIsolineLeft(isoline_points, intersection_point_index, point_index)
+
+        #return curve_integral / isoline_integral
+
+        return {"isoline": isoline_points, "points": [intersection_point_coords], "pv": [point, value], "S": curve_integral / isoline_integral}
 
 
     def post(self):
