@@ -28,6 +28,18 @@ function getStats() {
 
         let jsonResponse = JSON.parse(xhr.responseText);
         console.log(jsonResponse)
+
+        let isolines = []
+        for (let sp of jsonResponse.s) {
+            isolines.push(sp.isoline.flat());
+        }
+        graphic.setupIsolines(isolines);
+
+        let points = []
+        for (let sp of jsonResponse.s) {
+            points.push(sp.points.flat())
+        };
+        graphic.setupMorePoints(points.flat());
     };
 
     xhr.send(data);
