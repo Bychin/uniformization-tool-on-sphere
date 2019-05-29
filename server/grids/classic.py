@@ -1,13 +1,16 @@
 import math
+from multiprocessing import cpu_count, Pool
 import numpy as np
 
+import cfg
 
-CLASSIC_GRID_DIV = 360
+
+CLASSIC_GRID_DIV = cfg.get_param("classic_grid_div")
 
 
 class ClassicGrid:
     def __init__(self, div, function):
-        self.div = div
+        self.div = div  # TODO fail on odd
         self.function = function
         self.__generateAndCalculateGrid(function)
 
@@ -30,8 +33,16 @@ class ClassicGrid:
                 pointIndex = (i, j)
 
                 self.points[pointIndex] = point
-                self.values[point] = function(point)
 
+        # TODO move to func
+        points = list(self.points.values())
+        agents = 4 if cpu_count() > 4 else cpu_count()
+        chunksize = math.ceil(len(points) / agents)
+        with Pool(processes=agents) as pool:
+            values = pool.map(function, points, chunksize)
+        self.values = {points[i] : values[i] for i in range(len(points))}
+
+        # TODO move to func
         # trapezium is stored as 4 vertices from A to D anticlockwise:
         #   A -<- D          A (== D)
         #  /       \   or   / \
@@ -53,6 +64,29 @@ class ClassicGrid:
                 column.append((A, B, C, D))
 
             self.trapeziums.append(column)
+
+
+    # converts spherical coords of a point to Cartesian
+    # TODO @classmethod
+    def getCoordsOfPoint(self, point):
+        theta, phi = point[0], point[1]
+
+        si = math.sin(theta)
+        ci = math.cos(theta)
+
+        sj = math.sin(phi)
+        cj = math.cos(phi)
+
+        return (ci * sj, si * sj, cj)  # X, Y, Z
+
+    # converts Cartesian coords of a point to spherical
+    # TODO @classmethod
+    def getAnglesOfPoint(self, point):
+        theta = math.atan2(point[1], point[0])  # arctg(y/z)
+        if theta < 0:
+            theta += 2 * math.pi  # due to our classic grid construction logic
+        phi = math.acos(point[2])  # arccos(z)
+        return (theta, phi)
 
     # TODO
     # refactor getIsolineCoords (break)
@@ -281,6 +315,7 @@ class ClassicGrid:
         # 0 -- 1
         # |    |
         # 1 -- 0
+        # TODO think about it one more time (going to the wrong side second time?)
         elif index == 5:  # TODO check first and change index
             if start_side == 0:
                 end_side = 3

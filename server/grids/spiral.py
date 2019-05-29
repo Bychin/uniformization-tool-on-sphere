@@ -1,8 +1,11 @@
 import math
 import numpy as np
+from multiprocessing import cpu_count, Pool
+
+import cfg
 
 
-SPIRAL_GRID_POINTS = 100000
+SPIRAL_GRID_POINTS = cfg.get_param("spiral_grid_points")
 
 
 class SpiralGrid:
@@ -39,7 +42,13 @@ class SpiralGrid:
 
     def __calculateFunc(self, function):
         self.function = function
-        self.values = {point : function(point) for point in self.points}
+
+        agents = 4 if cpu_count() > 4 else cpu_count()
+        chunksize = math.ceil(len(self.points) / agents)
+        with Pool(processes=agents) as pool:
+            values = pool.map(function, self.points, chunksize)
+        self.values = {self.points[i] : values[i] for i in range(len(self.points))}
+
         self.data = np.fromiter(self.values.values(), dtype=float)
 
     def calculateIntegralInsideIsoline(self, c):
