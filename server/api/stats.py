@@ -1,7 +1,9 @@
 import time
 import math
 
+from autograd import grad
 import numpy as np
+import scipy.stats as st
 from tornado import escape, web
 
 from distribution import Distribution
@@ -33,16 +35,16 @@ class StatsAPI(web.RequestHandler):
 
     def __getGrids(self):
         key = (self.mean, self.cov)
+        self.distribution = Distribution(self.mean, self.cov)
 
         if not (key in self.database):
-            distribution = Distribution(self.mean, self.cov)
-
             self.database[key] = (
-                SpiralGrid(SPIRAL_GRID_POINTS, distribution.calc),
-                ClassicGrid(CLASSIC_GRID_DIV, distribution.calc)
+                SpiralGrid(SPIRAL_GRID_POINTS, self.distribution.calc),
+                ClassicGrid(CLASSIC_GRID_DIV, self.distribution.calc)
             )
 
         self.spiral_grid, self.classic_grid = self.database[key]
+        self.grad_of_d = grad(self.distribution.calcForGradient)  # TODO
 
     def __calculateTStats(self, value):
         return self.spiral_grid.calculateIntegralInsideIsoline(value)
@@ -93,26 +95,35 @@ class StatsAPI(web.RequestHandler):
             return True
         return False
 
+    # calculates line integral on infinitesimal straight line [a, b]
+    def __calcIntegralOnInfinitesimalCurve(self, a, b):
+        assert len(a) == len(b)
+
+        middle_point = [(a[i] + b[i]) / 2 for i in range(len(a))]
+        grad_modulus = np.linalg.norm(self.grad_of_d(middle_point))
+
+        return self.__distanceBetweenPoints(a, b) / grad_modulus
+
     # TODO gradient
     def __calcIntegralOnFullIsoline(self, isoline_points):
-        integral = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(len(isoline_points) - 1)])
-        return integral + self.__distanceBetweenPoints(isoline_points[len(isoline_points) - 1], isoline_points[0])
+        integral = np.sum([self.__calcIntegralOnInfinitesimalCurve(isoline_points[i], isoline_points[i + 1]) for i in range(len(isoline_points) - 1)])
+        return integral + self.__calcIntegralOnInfinitesimalCurve(isoline_points[len(isoline_points) - 1], isoline_points[0])
 
     def __calcIntegralOnCurveOnIsolineLeft(self, isoline_points, start_index, end_index):
         if end_index < start_index:
-            return np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(end_index, start_index)])
+            return np.sum([self.__calcIntegralOnInfinitesimalCurve(isoline_points[i], isoline_points[i + 1]) for i in range(end_index, start_index)])
         
-        first_part = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(start_index)])
-        second_part = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(end_index, len(isoline_points) - 1)])
-        return first_part + second_part + self.__distanceBetweenPoints(isoline_points[len(isoline_points) - 1], isoline_points[0])
+        first_part = np.sum([self.__calcIntegralOnInfinitesimalCurve(isoline_points[i], isoline_points[i + 1]) for i in range(start_index)])
+        second_part = np.sum([self.__calcIntegralOnInfinitesimalCurve(isoline_points[i], isoline_points[i + 1]) for i in range(end_index, len(isoline_points) - 1)])
+        return first_part + second_part + self.__calcIntegralOnInfinitesimalCurve(isoline_points[len(isoline_points) - 1], isoline_points[0])
 
     def __calcIntegralOnCurveOnIsolineRight(self, isoline_points, start_index, end_index):
         if start_index < end_index:
-            return np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(start_index, end_index)])
+            return np.sum([self.__calcIntegralOnInfinitesimalCurve(isoline_points[i], isoline_points[i + 1]) for i in range(start_index, end_index)])
         
-        first_part = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(end_index)])
-        second_part = np.sum([self.__distanceBetweenPoints(isoline_points[i], isoline_points[i + 1]) for i in range(start_index, len(isoline_points) - 1)])
-        return first_part + second_part + self.__distanceBetweenPoints(isoline_points[len(isoline_points) - 1], isoline_points[0])
+        first_part = np.sum([self.__calcIntegralOnInfinitesimalCurve(isoline_points[i], isoline_points[i + 1]) for i in range(end_index)])
+        second_part = np.sum([self.__calcIntegralOnInfinitesimalCurve(isoline_points[i], isoline_points[i + 1]) for i in range(start_index, len(isoline_points) - 1)])
+        return first_part + second_part + self.__calcIntegralOnInfinitesimalCurve(isoline_points[len(isoline_points) - 1], isoline_points[0])
 
     def __calculateSStats(self, point, value):
         isoline_points = self.classic_grid.getIsolineCoords(value)
@@ -170,6 +181,12 @@ class StatsAPI(web.RequestHandler):
 
         return {"isoline": isoline_points, "points": [intersection_point_coords], "pv": [point, value], "S": curve_integral / isoline_integral}
 
+    '''
+    @staticmethod
+    def __calcStats(self, point):
+        value = self.spiral_grid.function(point)
+        return self.__calculateTStats(value), self.__calculateSStats(point, value)
+    '''
 
     def post(self):
         start = time.time()
@@ -187,11 +204,25 @@ class StatsAPI(web.RequestHandler):
 
             t = []
             s = []
+            s_debug  = []
 
             self.pointsValues = {tuple(point) : self.spiral_grid.function(point) for point in self.points}
             for point, value in self.pointsValues.items():
                 t.append(self.__calculateTStats(value))
-                s.append(self.__calculateSStats(point, value))
+                s_res = self.__calculateSStats(point, value)
+                s_debug.append(s_res)
+                s.append(s_res["S"])
+
+            test_results = {
+                "ks": None,
+                "ad": None
+            }
+
+            test_results["ks"] = (st.kstest(t, "uniform")[1], st.kstest(s, "uniform")[1])
+            
+            uniform_data_t = st.uniform.rvs(size=len(t))
+            uniform_data_s = st.uniform.rvs(size=len(s))
+            test_results["ad"] = (st.anderson_ksamp([t, uniform_data_t])[2], st.anderson_ksamp([s, uniform_data_s])[2])
 
             print("StatsAPI: Stats calculation time:", time.time() - start)
 
@@ -200,7 +231,7 @@ class StatsAPI(web.RequestHandler):
             raise e  # TODO remove (debug)
             return
 
-        self.finish({"code": 200, "t": t, "s": s})
+        self.finish({"code": 200, "t": t, "s": s_debug, "tests": test_results})
 
     # Something bad here, but it's fast workaround right now (CORS policy)
     def options(self):

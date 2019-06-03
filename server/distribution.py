@@ -2,6 +2,8 @@ import math
 import numpy as np
 from scipy.special import erf
 
+import autograd.numpy as anp
+from autograd.scipy.special import erf as aerf
 
 # TODO add description and 3-D checks 
 class Distribution():
@@ -27,7 +29,13 @@ class Distribution():
         c = math.exp(-0.5 * self.mean_norm * self.mean_norm) * math.sqrt(self.lam_det) / (4 * math.pi * (u_norm ** 3))
         value = c * (z * math.sqrt(2 / math.pi) + math.exp(0.5 * z * z) * (1 + z * z) * (1 + erf(z / math.sqrt(2))))
 
-        if value > self.max[1]:
-            self.max = (u, value)
+        return value
+
+    def calcForGradient(self, u):
+        u_norm = anp.sqrt(anp.sum(anp.array([anp.array([self.lam[i][j] * u[i] * u[j] for j in range(3)]) for i in range(3)])))
+        z = anp.sum(anp.array([anp.array([self.lam[i][j] * self.mean[i] * u[j] for j in range(3)]) for i in range(3)])) / u_norm
+
+        c = anp.exp(-0.5 * self.mean_norm * self.mean_norm) * anp.sqrt(self.lam_det) / (4 * anp.pi * (u_norm ** 3))
+        value = c * (z * anp.sqrt(2 / anp.pi) + anp.exp(0.5 * z * z) * (1 + z * z) * (1 + aerf(z / anp.sqrt(2))))
 
         return value

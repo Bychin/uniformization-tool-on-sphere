@@ -29,6 +29,10 @@ function getStats() {
         let jsonResponse = JSON.parse(xhr.responseText);
         console.log(jsonResponse)
 
+        if (jsonResponse.s == null) {
+            return;
+        }
+
         let isolines = []
         for (let sp of jsonResponse.s) {
             isolines.push(sp.isoline.flat());

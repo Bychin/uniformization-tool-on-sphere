@@ -53,4 +53,7 @@ class SpiralGrid:
 
     def calculateIntegralInsideIsoline(self, c):
         valuesInsideIsoline = np.array(list(filter(lambda x: x > c, self.data)))
+
+        if len(valuesInsideIsoline) == 0:  # if c is pdf's maximum
+            return 0
         return np.mean(valuesInsideIsoline) * self.k * len(valuesInsideIsoline)
