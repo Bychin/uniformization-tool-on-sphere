@@ -19,7 +19,7 @@ void InitServer(void) {
         res.set_content(numbers, "text/plain");
     });
 
-    // server.Get("/stop", [&](const Request& req, Response& res) { server.stop(); });
+    server.Get("/stop", [&](const Request& req, Response& res) { server.stop(); });
 
     const auto host = config["host"].get<std::string>().c_str();
     const auto port = config["port"].get<int>();
