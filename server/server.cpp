@@ -1,6 +1,6 @@
 #include "yhirose/httplib.h"
 
-#include "cfg.hpp" // cfg::GetConfig()
+#include "util/cfg.hpp" // cfg::GetConfig()
 
 const auto config = cfg::GetConfig("./cfg.json");
 
@@ -21,10 +21,10 @@ void InitServer(void) {
 
     server.Get("/stop", [&](const Request& req, Response& res) { server.stop(); });
 
-    const auto host = config["host"].get<std::string>().c_str();
+    const auto host = config["host"].get<std::string>();
     const auto port = config["port"].get<int>();
 
-    server.listen(host, port);
+    server.listen(host.c_str(), port);
 }
 
 int main(void) {

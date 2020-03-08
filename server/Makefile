@@ -1,10 +1,15 @@
 CC = g++
 
+BOOST_DIR = /usr/local/lib/boost_1_72_0
+BOOST_INC = -I$(BOOST_DIR)
+
 BUILD_DIR = ./build
 BIN_DIR = ./bin
 INC_DIR = ./include
 
-CFLAGS = -I$(INC_DIR) -std=c++17
+CFLAGS = -I$(INC_DIR) $(BOOST_INC) -std=c++17
+
+SERVER_OBJ = server.o cfg.o distribution.o
 
 all:
 	make \
@@ -19,11 +24,14 @@ clean:
 	rm -rf $(BIN_DIR)
 	rm -rf $(BUILD_DIR)
 
-server: server.o cfg.o
-	$(CC) $(CFLAGS) $(BUILD_DIR)/server.o $(BUILD_DIR)/cfg.o -o $(BIN_DIR)/server
+server: $(SERVER_OBJ)
+	$(CC) $(CFLAGS) $(addprefix $(BUILD_DIR)/,$(SERVER_OBJ)) -o $(BIN_DIR)/server
 
 server.o:
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/server.o server.cpp
 
 cfg.o:
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/cfg.o util/cfg.cpp
+
+distribution.o:
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/distribution.o distribution.cpp
