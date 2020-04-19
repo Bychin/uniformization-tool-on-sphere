@@ -1,13 +1,19 @@
+fieldset {
+  border-radius: 6px;
+  border-color: black;
+  border-width: thin;
+  font-family: sans-serif;
+}
+
 .canvas {
   float: left
 }
-
 .parameters{
-  margin-left: 600px;
-  max-width: 280px;
-  position: relative;
+  float: right;
+  margin: 20px;
 }
 
 #webgl {
-  display: block;
+  width: 800px;
+  height: 800px;
 }

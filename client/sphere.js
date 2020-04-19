@@ -49,6 +49,10 @@ const SPHERE_COLOR = [0.5, 0., 0., 0.4];
 const POINTS_COLOR = [0., 0., 0., 1.];
 const ISOLINES_COLOR = [0., 0., 0.9, 1.];
 
+const COLORS = { // TODO move all colors here
+  DARK_OLIVE_GREEN: [85/256., 107/256., 47/256., 1.]
+}
+
 const LIGHT_COLOR = [0.8, 0.8, 0.8];
 const LIGHT_POS = [5.0, 0.0, 0.5];
 const AMBIENT_LIGHT = [0.2, 0.2, 0.2];
@@ -200,7 +204,6 @@ class Camera {
 
 
 class Graphic {
-
   constructor(sphere) { // TODO sphere to setupSphere
     this.canvas = document.getElementById('webgl');
 
@@ -248,7 +251,7 @@ class Graphic {
       this.old_y = e.pageY;
       e.preventDefault();
     };
-    //
+    ////////////////////////
 
     this.gl = getWebGLContext(this.canvas);
     if (!this.gl) {
@@ -298,8 +301,20 @@ class Graphic {
     for (let isoline of isolines) {
       this.isolines.push({
         positions: isoline,
-        indices: [...Array(isoline.length / 3).keys()],
+        indices: [...Array(isoline.length / 3).keys()], // TODO as default for DrawingObject?
         color: ISOLINES_COLOR,
+        mode: DRAW_MODE.LINE_LOOP
+      });
+    }
+  }
+
+  // TODO appendIsolines() ?
+  setupStatIsolines(isolines) { // isolines of result
+    for (let isoline of isolines) {
+      this.isolines.push({
+        positions: isoline,
+        indices: [...Array(isoline.length / 3).keys()], // TODO as default for DrawingObject?
+        color: COLORS.DARK_OLIVE_GREEN,
         mode: DRAW_MODE.LINE_LOOP
       });
     }
@@ -317,9 +332,27 @@ class Graphic {
   }
 
   setupCoordLines() {
+    let delta = 0.015;
+    let positions = [
+      1.3,0,0, 1.24,delta,delta, 1.24,-delta,delta, 1.3,0,0, // X coordinate line with an arrow // TODO different colors for arrows (as diff object?)?
+      1.24,delta,delta, 1.24,delta,-delta, 1.3,0,0,
+      1.24,-delta,-delta, 1.24,-delta,delta, 1.3,0,0,
+      1.24,-delta,-delta, 1.24,delta,-delta, 1.3,0,0,
+      0,0,0,
+      0,1.3,0, delta,1.24,delta, -delta,1.24,delta, 0,1.3,0,// Y coordinate line with an arrow
+      -delta,1.24,delta, -delta,1.24,-delta, 0,1.3,0,
+      -delta,1.24,-delta, delta,1.24,-delta, 0,1.3,0,
+      delta,1.24,-delta, delta,1.24,delta, 0,1.3,0,
+      0,0,0,
+      0,0,1.3, delta,delta,1.24, delta,-delta,1.24, 0,0,1.3, // z coordinate line with an arrow
+      delta,-delta,1.24, -delta,-delta,1.24, 0,0,1.3,
+      -delta,-delta,1.24, -delta,delta,1.24, 0,0,1.3,
+      -delta,delta,1.24, delta,delta,1.24, 0,0,1.3,
+    ];
+
     this.coordLines = {
-      positions: [1.3,0,0, 0,0,0, 0,1.3,0, 0,0,0, 0,0,1.3],
-      indices: [0, 1, 2, 3, 4],
+      positions: positions,
+      indices: [...Array(positions.length / 3).keys()],
       color: ISOLINES_COLOR,
       mode: DRAW_MODE.LINE_STRIP
     };

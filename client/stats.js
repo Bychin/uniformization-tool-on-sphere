@@ -37,7 +37,7 @@ function getStats() {
         for (let sp of jsonResponse.s) {
             isolines.push(sp.isoline.flat());
         }
-        graphic.setupIsolines(isolines);
+        graphic.setupStatIsolines(isolines);
 
         let points = []
         for (let sp of jsonResponse.s) {

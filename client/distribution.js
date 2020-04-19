@@ -31,7 +31,7 @@ function getDistributionParams() {
     return [mean, covMatrix];
 }
 
-function prepareIsolineAPIQuery(ratio) {
+function prepareIsolineAPIQuery() {
     let [mean, covMatrix] = getDistributionParams();
 
     let meanStr = mean.join(',');
@@ -42,7 +42,7 @@ function prepareIsolineAPIQuery(ratio) {
 }
 
 function uploadAGD() {
-    let url = prepareIsolineAPIQuery(ISOLINE_AREA_RATIO[0])
+    let url = prepareIsolineAPIQuery()
     let xhr = new XMLHttpRequest();
 
     xhr.open("GET", url);
