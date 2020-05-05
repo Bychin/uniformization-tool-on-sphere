@@ -1,5 +1,6 @@
 #include "angular_gauss.hpp"
 
+#include <array>
 #include <cmath>
 
 #include <boost/math/special_functions/erf.hpp>
@@ -36,34 +37,28 @@ double AngularGauss::Det(ublas::matrix<double>& m) {
     return determinant;
 }
 
-double AngularGauss::InnerProduct(ublas::vector<double>& x, ublas::vector<double>& y) {
-    assert(x.size() == 3 && y.size() == 3);
-
+double AngularGauss::InnerProduct(std::array<double, 3>& x, std::array<double, 3>& y) {
     double result = 0;
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
-            result += lambda(i, j) * x(i) * y(j);
+            result += lambda(i, j) * x.at(i) * y.at(j);
 
     return result;
 }
 
-AngularGauss::AngularGauss(ublas::vector<double>& mean_vec, ublas::matrix<double>& cov_mat) {
-    assert(mean_vec.size() == 3);
+AngularGauss::AngularGauss(std::array<double, 3>& mean_vec, ublas::matrix<double>& cov_mat) {
     assert(cov_mat.size1() == 3 && cov_mat.size2() == 3);
 
-    // TODO heap allocation? (Yeah, I have almost forget CPP)
-
-    mean = mean_vec;
+    std::copy(mean_vec.begin(), mean_vec.end(), mean.begin());
+    lambda = ublas::matrix<double>(3,3);
     InvMatrix(cov_mat, lambda);
     det_lambda = Det(lambda);
-    mean_norm = std::sqrt(InnerProduct(mean, mean));
+    mean_norm  = std::sqrt(InnerProduct(mean, mean));
 }
 
-double AngularGauss::Calc(ublas::vector<double>& u) {
-    assert(u.size() == 3);
-
+double AngularGauss::Calc(std::array<double, 3>& u) {
     double u_norm = std::sqrt(InnerProduct(u, u));
-    double z = std::sqrt(InnerProduct(mean, u)) / u_norm;
+    double z      = std::sqrt(InnerProduct(mean, u)) / u_norm;
 
     double coeff = std::exp(-0.5 * mean_norm * mean_norm) * std::sqrt(det_lambda) /
                    (4 * M_PI * u_norm * u_norm * u_norm);

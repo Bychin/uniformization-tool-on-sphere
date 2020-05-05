@@ -1,5 +1,7 @@
-#ifndef ANG_GAUSSIAN_DISTRIBUTION_HPP
-#define ANG_GAUSSIAN_DISTRIBUTION_HPP
+#ifndef ANGULAR_GAUSS_HPP
+#define ANGULAR_GAUSS_HPP
+
+#include <array>
 
 #include <boost/numeric/ublas/matrix.hpp>
 
@@ -7,7 +9,7 @@ namespace ublas = boost::numeric::ublas;
 
 // Angular Gaussian distribution
 class AngularGauss {
-    ublas::vector<double> mean;
+    std::array<double, 3> mean;
     double mean_norm;
 
     ublas::matrix<double> lambda;
@@ -15,11 +17,11 @@ class AngularGauss {
 
     void InvMatrix(ublas::matrix<double>&, ublas::matrix<double>&);
     double Det(ublas::matrix<double>&);
-    double InnerProduct(ublas::vector<double>&, ublas::vector<double>&);
+    double InnerProduct(std::array<double, 3>&, std::array<double, 3>&);
 
 public:
-    AngularGauss(ublas::vector<double>&, ublas::matrix<double>&);
-    double Calc(ublas::vector<double>&);
+    AngularGauss(std::array<double, 3>&, ublas::matrix<double>&);
+    double Calc(std::array<double, 3>&);
 };
 
-#endif // ANG_GAUSSIAN_DISTRIBUTION_HPP
+#endif // ANGULAR_GAUSS_HPP
