@@ -7,9 +7,12 @@
 
 #include <boost/container_hash/hash.hpp>
 
+#include "distributions/angular_gauss.hpp"
+
 class SpiralGrid {
     int points_amount;
-    double (*function_on_grid)(std::array<double, 3>&);
+    AngularGauss* distr;
+    //double (*function_on_grid)(std::array<double, 3>&);
 
     // elementary_part_area is an area of an elementary part of a sphere for
     // every grid value
@@ -26,7 +29,7 @@ class SpiralGrid {
     void EvaluateFunc();
 
 public:
-    SpiralGrid(int, double(std::array<double, 3>&));
+    SpiralGrid(int, AngularGauss*);
     double CalcIntegralInsideIsoline(double isoline_value);
     const std::vector<double>& Data();
 };

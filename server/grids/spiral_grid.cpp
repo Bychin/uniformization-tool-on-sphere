@@ -3,9 +3,11 @@
 #include <cmath>
 #include <vector>
 
-SpiralGrid::SpiralGrid(int N, double (*distribution_func)(std::array<double, 3>&)) {
-    points_amount              = N;
-    function_on_grid = distribution_func;
+#include "distributions/angular_gauss.hpp"
+
+SpiralGrid::SpiralGrid(int N, AngularGauss* distr) : points_amount(N), distr(distr) {
+    //points_amount              = N;
+    //function_on_grid = distribution_func;
 
     elementary_part_area = 4 * M_PI / N;
 
@@ -44,7 +46,7 @@ void SpiralGrid::GenerateGrid() {
 void SpiralGrid::EvaluateFunc() {
     values.reserve(points_amount);
     for (auto& it : points)
-        values[it] = function_on_grid(it);
+        values[it] = distr->Calc(it); //function_on_grid(it);
 
     data.reserve(points_amount);
     for (auto it = values.begin(); it != values.end(); ++it) {

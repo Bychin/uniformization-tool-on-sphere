@@ -7,13 +7,12 @@ BUILD_DIR = ./build
 BIN_DIR = ./bin
 INC_DIR = ./include
 
-CFLAGS = -I$(INC_DIR) $(BOOST_INC) -std=c++17
+CFLAGS = -I$(INC_DIR) -I./ $(BOOST_INC) -std=c++17
 
 SERVER_OBJ = server.o cfg.o angular_gauss.o classic_grid.o spiral_grid.o \
 	isoline_api.o
 
 TEST_SERVER_OBJ = test_angular_gauss_distribution.o
-TEST_CFLAGS = -I./
 
 all:
 	make \
@@ -64,8 +63,7 @@ spiral_grid.o:
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ grids/spiral_grid.cpp
 
 isoline_api.o:
-	$(CC) $(CFLAGS) -I./ -c -o $(BUILD_DIR)/$@ api/isoline.cpp
-	# TODO -I./
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ api/isoline.cpp
 
 test_angular_gauss_distribution.o:
-	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c -o $(BUILD_DIR)/$@ test/test_angular_gauss_distribution.cpp
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ test/test_angular_gauss_distribution.cpp

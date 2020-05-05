@@ -4,12 +4,13 @@
 #include <cmath>
 #include <limits>
 #include <vector>
+#include <iostream>
 
 #include <grids/classic_grid.hpp>
 #include <grids/spiral_grid.hpp>
 
-IsolineAPI::IsolineAPI(std::array<double, 3> mean,
-                       std::array<double, 6> cov,
+IsolineAPI::IsolineAPI(std::array<double, 3> mean, // TODO remove
+                       std::array<double, 6> cov, // TODO remove
                        std::vector<double> ratios,
                        ClassicGrid* classic_grid,
                        SpiralGrid* spiral_grid)
@@ -17,14 +18,14 @@ IsolineAPI::IsolineAPI(std::array<double, 3> mean,
 }
 
 double IsolineAPI::GetIsolineValueByRatio(double ratio) {
-    double f1            = 0;
-    double f2            = *std::max_element(spiral_grid->Data().begin(), spiral_grid->Data().end());
+    double f1 = 0;
+    double f2 = *std::max_element(spiral_grid->Data().begin(), spiral_grid->Data().end());
     double isoline_value = 0;
 
     double integral = std::numeric_limits<double>::max();
     double eps      = 0.001;
 
-    for (int i = 0; i < 50 || std::fabs(integral - ratio) > eps; ++i) {
+    for (int i = 0; i < 50 && std::fabs(integral - ratio) > eps; ++i) {
         isoline_value = (f1 + f2) / 2;
         integral      = spiral_grid->CalcIntegralInsideIsoline(isoline_value);
 
@@ -43,6 +44,7 @@ std::unordered_map<double, std::vector<std::array<double, 3>>> IsolineAPI::GetIs
 
     for (auto r : ratios) {
         auto value  = GetIsolineValueByRatio(r);
+        std::cout << "For ratio=" << r << " got value=" << value << ", start getting isoline coords..." << std::endl;
         auto points = classic_grid->GetIsolineCoords(value);
         isolines[r] = points;
     }

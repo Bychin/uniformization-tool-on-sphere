@@ -6,9 +6,12 @@
 #include <string>
 #include <unordered_set>
 
-ClassicGrid::ClassicGrid(int grid_div, double (*distribution_calc)(std::array<double, 3>&)) {
-    div              = grid_div;
-    function_on_grid = distribution_calc;
+#include "distributions/angular_gauss.hpp"
+
+ClassicGrid::ClassicGrid(int grid_div, AngularGauss* distr) : div(grid_div), distr(distr) { //double (*distribution_calc)(std::array<double, 3>&)) {
+    //div              = grid_div;
+    //distr = distr;
+    //function_on_grid = distribution_calc;
 
     GenerateGridAndEvaluateFunc();
 }
@@ -40,7 +43,7 @@ void ClassicGrid::GenerateGridAndEvaluateFunc() {
     // values = std::unordered_map<std::array<double, 3>, double>(div * (div + 1));
     values.reserve(div * (div + 1));
     for (auto it = points.begin(); it != points.end(); ++it) {
-        values[it->second] = function_on_grid(it->second);
+        values[it->second] =  distr->Calc(it->second); //function_on_grid(it->second);
     }
 
     /* trapezium is stored as 4 vertices from A to D anticlockwise:
