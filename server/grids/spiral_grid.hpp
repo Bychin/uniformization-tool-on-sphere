@@ -28,6 +28,7 @@ class SpiralGrid {
 public:
     SpiralGrid(int, double(std::array<double, 3>&));
     double CalcIntegralInsideIsoline(double isoline_value);
+    const std::vector<double>& Data();
 };
 
 #endif // SPIRAL_GRID_HPP

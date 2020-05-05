@@ -69,3 +69,7 @@ double SpiralGrid::CalcIntegralInsideIsoline(double isoline_value) {
 
     return sum * elementary_part_area;
 }
+
+const std::vector<double>& SpiralGrid::Data() {
+    return data;
+}
