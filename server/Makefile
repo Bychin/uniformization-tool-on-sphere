@@ -9,7 +9,7 @@ INC_DIR = ./include
 
 CFLAGS = -I$(INC_DIR) $(BOOST_INC) -std=c++17
 
-SERVER_OBJ = server.o cfg.o angular_gauss.o
+SERVER_OBJ = server.o cfg.o angular_gauss.o classic_grid.o
 
 TEST_SERVER_OBJ = test_angular_gauss_distribution.o
 TEST_CFLAGS = -I./
@@ -39,7 +39,7 @@ test:
 
 # individual executables
 
-test_angular_gauss_distribution: distribution.o test_angular_gauss_distribution.o
+test_angular_gauss_distribution: angular_gauss.o test_angular_gauss_distribution.o
 	$(CC) $(CFLAGS) $(TEST_CFLAGS) $(BUILD_DIR)/angular_gauss.o $(BUILD_DIR)/test_angular_gauss_distribution.o \
 	-o $(BIN_DIR)/test_angular_gauss_distribution
 
@@ -48,13 +48,16 @@ test_angular_gauss_distribution: distribution.o test_angular_gauss_distribution.
 # compiled objects
 
 server.o:
-	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/server.o server.cpp
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ server.cpp
 
 cfg.o:
-	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/cfg.o util/cfg.cpp
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ util/cfg.cpp
 
 angular_gauss.o:
-	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/angular_gauss.o distributions/angular_gauss.cpp
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ distributions/angular_gauss.cpp
+
+classic_grid.o:
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ grids/classic_grid.cpp
 
 test_angular_gauss_distribution.o:
-	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c -o $(BUILD_DIR)/test_angular_gauss_distribution.o test/test_angular_gauss_distribution.cpp
+	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c -o $(BUILD_DIR)/$@ test/test_angular_gauss_distribution.cpp
