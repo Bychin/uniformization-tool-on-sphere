@@ -19,7 +19,7 @@ class ClassicGrid {
     // points is a map of (i, j) pairs, that are indices of grid points, to
     // their (x, y, z) coordinates.
     std::unordered_map<std::array<int, 2>, std::array<double, 3>, boost::hash<std::array<int, 2>>> points;
-    // values is a evaluated function on grid.
+    // values is an evaluated function on grid.
     std::unordered_map<std::array<double, 3>, double, boost::hash<std::array<double, 3>>> values;
     // trapeziums are the elementary objects of which the grid consists.
     std::vector<std::vector<std::array<std::array<int, 2>, 4>>> trapeziums;
@@ -30,7 +30,8 @@ class ClassicGrid {
     std::array<int, 2> GetLowerTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices);
     std::array<int, 2> GetLeftTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices);
     std::array<int, 2> GetRightTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices);
-    std::array<double, 3> FindIntersection(std::array<double, 3>& x1, std::array<double, 3>& x2, double a, double b, double c);
+    std::array<double, 3> FindIntersection(
+        std::array<double, 3>& x1, std::array<double, 3>& x2, double a, double b, double c);
     std::tuple<int, std::array<double, 3>> ProcessSegment(std::array<std::array<int, 2>, 4>& trapezium,
                                                           int index,
                                                           int start_side,

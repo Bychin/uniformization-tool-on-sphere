@@ -13,14 +13,13 @@ ClassicGrid::ClassicGrid(int grid_div, double (*distribution_calc)(std::array<do
     GenerateGridAndEvaluateFunc();
 }
 
+// TODO parallel
 void ClassicGrid::GenerateGridAndEvaluateFunc() {
     double angle = M_PI / div;
 
     // TODO init points and values
     // points = std::unordered_map<std::array<int, 2>, std::array<double, 3>>();
     points.reserve(div * (div + 1));
-    // values = std::unordered_map<std::array<double, 3>, double>(div * (div + 1));
-    values.reserve(div * (div + 1));
 
     for (int i = 0; i < div; ++i) { // i goes around the sphere
         double theta = 2 * i * angle;
@@ -38,6 +37,8 @@ void ClassicGrid::GenerateGridAndEvaluateFunc() {
         }
     }
 
+    // values = std::unordered_map<std::array<double, 3>, double>(div * (div + 1));
+    values.reserve(div * (div + 1));
     for (auto it = points.begin(); it != points.end(); ++it) {
         values[it->second] = function_on_grid(it->second);
     }
