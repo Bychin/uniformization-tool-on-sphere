@@ -2,7 +2,6 @@
 
 #include <array>
 #include <cmath>
-#include <iostream>
 #include <string>
 #include <unordered_set>
 
@@ -20,8 +19,6 @@ ClassicGrid::ClassicGrid(int grid_div, AngularGauss* distr) : div(grid_div), dis
 void ClassicGrid::GenerateGridAndEvaluateFunc() {
     double angle = M_PI / div;
 
-    // TODO init points and values
-    // points = std::unordered_map<std::array<int, 2>, std::array<double, 3>>();
     points.reserve(div * (div + 1));
 
     for (int i = 0; i < div; ++i) { // i goes around the sphere
@@ -35,12 +32,10 @@ void ClassicGrid::GenerateGridAndEvaluateFunc() {
             double cj  = std::cos(phi);
 
             std::array<double, 3> point = {ci * sj, si * sj, cj}; // X, Y, Z
-            // std::array<int, 2> point_index = {i, j};
             points[{i, j}] = point;
         }
     }
 
-    // values = std::unordered_map<std::array<double, 3>, double>(div * (div + 1));
     values.reserve(div * (div + 1));
     for (auto it = points.begin(); it != points.end(); ++it) {
         values[it->second] =  distr->Calc(it->second); //function_on_grid(it->second);
@@ -66,7 +61,7 @@ void ClassicGrid::GenerateGridAndEvaluateFunc() {
             std::array<int, 2> C = {right_i, j + 1};
             std::array<int, 2> D = {right_i, j};
 
-            trapezium_column[j] = {A, B, C, D};
+            trapezium_column.push_back({A, B, C, D});
         }
 
         trapeziums.push_back(trapezium_column);
@@ -120,8 +115,7 @@ std::vector<std::array<double, 3>> ClassicGrid::GetIsolineCoords(double iso_valu
             auto trapezium = trapeziums[i][j];
             auto index     = GetTrapeziumIndex(trapezium, iso_value);
 
-            if (indicies_of_bad_to_start_trapeziums.find(index) ==
-                indicies_of_bad_to_start_trapeziums.end()) {
+            if (indicies_of_bad_to_start_trapeziums.find(index) == indicies_of_bad_to_start_trapeziums.end()) {
                 std::tie(end_side, end_point) = ProcessSegment(trapezium, index, -1, iso_value);
                 isoline_points.push_back(end_point);
                 initial_trapezium_indices = {i, j};

@@ -58,7 +58,7 @@ AngularGauss::AngularGauss(std::array<double, 3>& mean_vec, ublas::matrix<double
 
 double AngularGauss::Calc(std::array<double, 3>& u) {
     double u_norm = std::sqrt(InnerProduct(u, u));
-    double z      = std::sqrt(InnerProduct(mean, u)) / u_norm;
+    double z      = InnerProduct(mean, u) / u_norm;
 
     double coeff = std::exp(-0.5 * mean_norm * mean_norm) * std::sqrt(det_lambda) /
                    (4 * M_PI * u_norm * u_norm * u_norm);

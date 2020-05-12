@@ -58,11 +58,13 @@ function uploadAGD() {
             alert(resp.code + ': ' + resp.body);
         }
 
-        let isolinesDict = resp.isolines;
+        let isolinesArray = resp.body;
         let isolines = []
-        for (let ratio in isolinesDict) {
-            isolines.push(isolinesDict[ratio].flat());
-        }
+        isolinesArray.forEach(e => {
+            // e[0] - ratio, e[1] - array of coordinates
+            isolines.push(e[1].flat());
+        })
+
         graphic.setupIsolines(isolines);
     }
 
