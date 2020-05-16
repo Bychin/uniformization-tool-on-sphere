@@ -2,3 +2,5 @@
 .clang-format
 
 server_python/
+server/bin
+server/build
