@@ -11,7 +11,6 @@
 
 class SpiralGrid {
     int points_amount;
-    AngularGauss* distr;
     //double (*function_on_grid)(std::array<double, 3>&);
 
     // elementary_part_area is an area of an elementary part of a sphere for
@@ -29,6 +28,8 @@ class SpiralGrid {
     void EvaluateFunc();
 
 public:
+    AngularGauss* distr;
+
     SpiralGrid(int, AngularGauss*);
     double CalcIntegralInsideIsoline(double isoline_value);
     const std::vector<double>& Data();

@@ -9,12 +9,10 @@
 #include <grids/classic_grid.hpp>
 #include <grids/spiral_grid.hpp>
 
-IsolineAPI::IsolineAPI(std::array<double, 3> mean, // TODO remove
-                       std::array<double, 6> cov, // TODO remove
-                       std::vector<double> ratios,
+IsolineAPI::IsolineAPI(std::vector<double>& ratios,
                        ClassicGrid* classic_grid,
                        SpiralGrid* spiral_grid)
-    : mean(mean), cov(cov), ratios(ratios), classic_grid(classic_grid), spiral_grid(spiral_grid) {
+    : ratios(ratios), classic_grid(classic_grid), spiral_grid(spiral_grid) {
 }
 
 double IsolineAPI::GetIsolineValueByRatio(double ratio) {

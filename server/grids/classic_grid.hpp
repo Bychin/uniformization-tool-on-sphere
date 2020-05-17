@@ -13,7 +13,6 @@
 class ClassicGrid {
     int div;
     //double (*function_on_grid)(std::array<double, 3>&);
-    AngularGauss* distr;
 
     // TODO std::array<int, 2> as ClassicGridPoint? typedef
     // TODO same for std::array<double, 3>?
@@ -42,6 +41,8 @@ class ClassicGrid {
     int GetTrapeziumIndex(std::array<std::array<int, 2>, 4>& trapezium, double value);
 
 public:
+    AngularGauss* distr;
+
     ClassicGrid(int, AngularGauss*);
     std::array<double, 3> GetCoordsOfPoint(std::array<double, 2>& point);
     std::array<double, 2> GetAnglesOfPoint(std::array<double, 3>& point);

@@ -9,8 +9,6 @@
 #include <grids/spiral_grid.hpp>
 
 class IsolineAPI {
-    std::array<double, 3> mean;
-    std::array<double, 6> cov;
     std::vector<double> ratios;
 
     ClassicGrid* classic_grid;
@@ -19,9 +17,7 @@ class IsolineAPI {
     double GetIsolineValueByRatio(double ratio);
 
 public:
-    IsolineAPI(std::array<double, 3> mean,
-               std::array<double, 6> cov,
-               std::vector<double> ratios,
+    IsolineAPI(std::vector<double>& ratios,
                ClassicGrid* classic_grid,
                SpiralGrid* spiral_grid);
     // TODO bool Validate();

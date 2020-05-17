@@ -22,6 +22,7 @@ class AngularGauss {
 public:
     AngularGauss(std::array<double, 3>&, ublas::matrix<double>&);
     double Calc(std::array<double, 3>&);
+    std::array<double, 3> Mean();
 };
 
 #endif // ANGULAR_GAUSS_HPP

@@ -10,7 +10,7 @@ INC_DIR = ./include
 CFLAGS = -I$(INC_DIR) -I./ $(BOOST_INC) -std=c++17
 
 SERVER_OBJ = server.o cfg.o angular_gauss.o classic_grid.o spiral_grid.o \
-	isoline_api.o
+	isoline_api.o stats_api.o
 
 TEST_SERVER_OBJ = test_angular_gauss_distribution.o
 
@@ -64,6 +64,9 @@ spiral_grid.o:
 
 isoline_api.o:
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ api/isoline.cpp
+
+stats_api.o:
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ api/stats.cpp
 
 test_angular_gauss_distribution.o:
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/$@ test/test_angular_gauss_distribution.cpp

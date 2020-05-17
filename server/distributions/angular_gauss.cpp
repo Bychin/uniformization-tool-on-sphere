@@ -66,3 +66,7 @@ double AngularGauss::Calc(std::array<double, 3>& u) {
     return coeff * (z * std::sqrt(M_2_PI) +
                     std::exp(0.5 * z * z) * (1 + z * z) * (1 + boost::math::erf(z / M_SQRT2)));
 }
+
+std::array<double, 3> AngularGauss::Mean() {
+    return std::array<double, 3>{mean};
+}
