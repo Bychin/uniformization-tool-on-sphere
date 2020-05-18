@@ -4,7 +4,8 @@
 #include "nlohmann/json.hpp"
 
 namespace cfg {
-    const nlohmann::json GetConfig(std::string);
+    typedef nlohmann::json Config;
+    const Config GetConfig(std::string);
 }
 
 #endif // CFG_HPP

@@ -8,20 +8,21 @@
 #include <tuple>
 #include <exception>
 
-#include "api/isoline.hpp"                 // IsolineAPI
-#include "api/stats.hpp"                 // IsolineAPI
-#include "distributions/angular_gauss.hpp" // AngularGauss
-#include "grids/classic_grid.hpp" // ClassicGrid
-#include "grids/spiral_grid.hpp" // SpiralGrid
-#include "nlohmann/json.hpp"
-#include "util/cfg.hpp" // cfg::GetConfig()
-#include "yhirose/httplib.h"
 #include "psvt/statistics.cpp" // Yeah this source is VERY messy
+#include "nlohmann/json.hpp"
+#include "yhirose/httplib.h"
+
+#include "api/isoline.hpp"                 // IsolineAPI
+#include "api/stats.hpp"                   // IsolineAPI
+#include "distributions/angular_gauss.hpp" // AngularGauss
+#include "grids/classic_grid.hpp"          // ClassicGrid
+#include "grids/spiral_grid.hpp"           // SpiralGrid
+#include "util/cfg.hpp"                    // cfg::Config
 
 namespace ublas = boost::numeric::ublas;
 using json = nlohmann::json;
 
-const auto config = cfg::GetConfig("./cfg.json"); // TODO command line argument
+cfg::Config CONFIG;
 
 // TODO std::tuple<std::array<double, 3>, std::array<double, 6>> -> AngularGaussParams
 // database stores distributions with raw mean and cov parameters.
@@ -43,10 +44,10 @@ std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std:
     std::cout << "Will calculate grids with params: mean=" << mean.data() << ", cov=" << cov.data() << std::endl;
 
     AngularGauss* distribution = new AngularGauss(mean, cov_mat);
-    std::cout << "Will calculate ClassicGrid: mean=" << config["classic_grid_div"].get<int>() << std::endl;
-    ClassicGrid* classic_grid = new ClassicGrid(config["classic_grid_div"].get<int>(), distribution);
-    std::cout << "Will calculate SpiralGrid: mean=" << config["spiral_grid_points"].get<int>() << std::endl;
-    SpiralGrid* spiral_grid = new SpiralGrid(config["spiral_grid_points"].get<int>(), distribution);
+    std::cout << "Will calculate ClassicGrid: mean=" << CONFIG["classic_grid_div"].get<int>() << std::endl;
+    ClassicGrid* classic_grid = new ClassicGrid(CONFIG["classic_grid_div"].get<int>(), distribution);
+    std::cout << "Will calculate SpiralGrid: mean=" << CONFIG["spiral_grid_points"].get<int>() << std::endl;
+    SpiralGrid* spiral_grid = new SpiralGrid(CONFIG["spiral_grid_points"].get<int>(), distribution);
     std::cout << "Done with grids" << std::endl;
 
     auto result = std::make_tuple(classic_grid, spiral_grid);
@@ -267,12 +268,18 @@ void InitServer(void) {
 
     server.Get("/stop", [&](const Request& req, Response& res) { server.stop(); });
 
-    const auto host = config["host"].get<std::string>();
-    const auto port = config["port"].get<int>();
+    const auto host = CONFIG["host"].get<std::string>();
+    const auto port = CONFIG["port"].get<int>();
 
     server.listen(host.c_str(), port);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        std::cerr << "please specify config path as second argument" << std::endl;
+        exit(1);
+    }
+
+    CONFIG = cfg::GetConfig(argv[1]);
     InitServer();
 }
