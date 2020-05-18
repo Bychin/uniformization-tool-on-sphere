@@ -3,6 +3,7 @@
 #include <array>
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <vector>
 #include <limits>
 
@@ -25,11 +26,12 @@ double StatsAPI::DistanceBetweenPoints(std::array<double, 3>& point1, std::array
 int StatsAPI::InsertPointIntoIsoline(std::array<double, 3>& point, std::vector<std::array<double, 3>>& isoline_points) {
     int point_index = -1;
 
+    if (isoline_points.size() < 2)
+        throw std::logic_error("InsertPointIntoIsoline: isoline_points length is less than 2");
+
     // Calculate distance between point and each isoline point.
     // The smallest two distances will indicate the place, where the point must
     // be inserted into isoline_points array.
-
-    assert(("isoline_points length is less than 2", isoline_points.size() >= 2));
 
     double first_smallest_distance = DistanceBetweenPoints(isoline_points[0], point);
     double second_smallest_distance = DistanceBetweenPoints(isoline_points[1], point);
@@ -64,7 +66,8 @@ int StatsAPI::InsertPointIntoIsoline(std::array<double, 3>& point, std::vector<s
         // it is the two adjacent points of isoline_points
         point_index = std::max(index_of_first_smallest, index_of_second_smallest);
     
-    assert(("The smallest two distances are not nearby", point_index != -1));
+    if (point_index == -1)
+        throw std::logic_error("InsertPointIntoIsoline: the smallest two distances are not nearby");
 
     isoline_points.insert(isoline_points.begin() + point_index, point);
 
@@ -137,7 +140,8 @@ double StatsAPI::CalcIntegralOnFullIsoline(std::vector<std::array<double, 3>>& i
 }
 
 double StatsAPI::CalcIntegralOnLeftCurveOnIsoline(std::vector<std::array<double, 3>>& isoline_points, int start_index, int end_index) {
-    assert(("start_index equals end_index (left)", start_index != end_index));
+    if (start_index == end_index)
+        throw std::invalid_argument("CalcIntegralOnLeftCurveOnIsoline: start_index equals end_index");
 
     double sum = 0;
 
@@ -155,7 +159,8 @@ double StatsAPI::CalcIntegralOnLeftCurveOnIsoline(std::vector<std::array<double,
 }
 
 double StatsAPI::CalcIntegralOnRightCurveOnIsoline(std::vector<std::array<double, 3>>& isoline_points, int start_index, int end_index) {
-    assert(("start_index equals end_index (right)", start_index != end_index));
+    if (start_index == end_index)
+        throw std::invalid_argument("CalcIntegralOnRightCurveOnIsoline: start_index equals end_index");
 
     double sum = 0;
 

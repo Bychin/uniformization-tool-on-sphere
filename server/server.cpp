@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <exception>
 
 #include "api/isoline.hpp"                 // IsolineAPI
 #include "api/stats.hpp"                 // IsolineAPI
@@ -16,7 +17,6 @@
 #include "util/cfg.hpp" // cfg::GetConfig()
 #include "yhirose/httplib.h"
 #include "psvt/statistics.cpp" // Yeah this source is VERY messy
-//#include <random> // debug
 
 namespace ublas = boost::numeric::ublas;
 using json = nlohmann::json;
@@ -57,16 +57,16 @@ std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std:
 
 IsolineAPI* GetIsolineAPI(const httplib::Request& req) {
     if (!req.has_param("mean"))
-        throw "no 'mean' URL param";
+        throw std::invalid_argument("no 'mean' URL param");
     if (!req.has_param("cov"))
-        throw "no 'cov' URL param";
+        throw std::invalid_argument("no 'cov' URL param");
     if (!req.has_param("ratio"))
-        throw "no 'ratio' URL param";
+        throw std::invalid_argument("no 'ratio' URL param");
 
     std::vector<std::string> raw_mean_vec;
     boost::algorithm::split(raw_mean_vec, req.get_param_value("mean"), boost::is_any_of(","));
     if (raw_mean_vec.size() != 3) {
-        throw "wrong 'mean' URL param";
+        throw std::invalid_argument("wrong 'mean' URL param");
     }
 
     std::array<double, 3> mean_vec;
@@ -76,7 +76,7 @@ IsolineAPI* GetIsolineAPI(const httplib::Request& req) {
     std::vector<std::string> raw_cov_vec;
     boost::algorithm::split(raw_cov_vec, req.get_param_value("cov"), boost::is_any_of(","));
     if (raw_cov_vec.size() != 6) {
-        throw "wrong 'cov' URL param";
+        throw std::invalid_argument("wrong 'cov' URL param");
     }
 
     std::array<double, 6> cov_vec;
@@ -86,7 +86,7 @@ IsolineAPI* GetIsolineAPI(const httplib::Request& req) {
     std::vector<std::string> raw_ratios;
     boost::algorithm::split(raw_ratios, req.get_param_value("ratio"), boost::is_any_of(","));
     if (raw_ratios.size() == 0) {
-        throw "wrong 'ratio' URL param";
+        throw std::invalid_argument("wrong 'ratio' URL param");
     }
 
     std::vector<double> ratios_vec(raw_ratios.size());
@@ -105,16 +105,16 @@ StatsAPI* GetStatsAPI(const httplib::Request& req) {
     json params = json::parse(req.body);
 
     if (params.find("mean") == params.end())
-        throw "no 'mean' data";
+        throw std::invalid_argument("no 'mean' data");
     if (params.find("cov") == params.end())
-        throw "no 'cov' data";
+        throw std::invalid_argument("no 'cov' data");
     if (params.find("points") == params.end())
-        throw "no 'points' data";
+        throw std::invalid_argument("no 'points' data");
 
     std::vector<std::string> raw_mean_vec;
     boost::algorithm::split(raw_mean_vec, params["mean"].get<std::string>(), boost::is_any_of(","));
     if (raw_mean_vec.size() != 3) {
-        throw "wrong 'mean' data";
+        throw std::invalid_argument("wrong 'mean' data");
     }
 
     std::array<double, 3> mean_vec;
@@ -124,7 +124,7 @@ StatsAPI* GetStatsAPI(const httplib::Request& req) {
     std::vector<std::string> raw_cov_vec;
     boost::algorithm::split(raw_cov_vec, params["cov"].get<std::string>(), boost::is_any_of(","));
     if (raw_cov_vec.size() != 6) {
-        throw "wrong 'cov' data";
+        throw std::invalid_argument("wrong 'cov' data");
     }
 
     std::array<double, 6> cov_vec;
@@ -134,7 +134,7 @@ StatsAPI* GetStatsAPI(const httplib::Request& req) {
     std::vector<std::string> raw_points;
     boost::algorithm::split(raw_points, params["points"].get<std::string>(), boost::is_any_of(","));
     if (raw_points.size() == 0 || raw_points.size()%3 != 0) {
-        throw "wrong 'points' data";
+        throw std::invalid_argument("wrong 'points' data");
     }
 
     std::vector<std::array<double, 3>> points_vec(raw_points.size() / 3);
@@ -157,9 +157,6 @@ StatsAPI* GetStatsAPI(const httplib::Request& req) {
 
 void InitServer(void) {
     using namespace httplib;
-
-    /*std::random_device rd;
-    std::mt19937 gen(rd());*/
 
     Server server;
 
@@ -190,52 +187,62 @@ void InitServer(void) {
         res.set_header("Access-Control-Allow-Headers", "*");
         json response;
 
-        /*std::uniform_real_distribution<> dis(0., 1.);
-        auto tmp_vec = std::vector<double>(100);
-        for (int i = 0; i < 100; ++i) {
-            tmp_vec[i] = dis(gen);
-        }
-
-        double *OrdUnif = new double[100];
-        double KS_measure, KS_estim, AD_measure, AD_estim;
-        StTests1D(OrdUnif, KS_measure, KS_estim, AD_measure, AD_estim, tmp_vec.data(), 100);
-        std::cout << "KS_measure=" << KS_measure << " KS_estim=" << KS_estim << std::endl;
-        std::cout << "AD_measure=" << AD_measure << " AD_estim=" << AD_estim << std::endl;
-
-        std::uniform_real_distribution<> dis2(3., 4.);
-        auto tmp_vec2 = std::vector<double>(100);
-        for (int i = 0; i < 100; ++i)
-            tmp_vec2[i] = dis2(gen);
-
-        double *OrdUnif2 = new double[100];
-        double KS_measure2, KS_estim2, AD_measure2, AD_estim2;
-        StTests1D(OrdUnif2, KS_measure2, KS_estim2, AD_measure2, AD_estim2, tmp_vec2.data(), 100);
-        std::cout << "KS_measure=" << KS_measure2 << " KS_estim=" << KS_estim2 << std::endl;
-        std::cout << "AD_measure=" << AD_measure2 << " AD_estim=" << AD_estim2 << std::endl;
-
-        std::cout << "end of test" << std::endl;*/
-
         try {
             auto api = GetStatsAPI(req);
             auto points = api->points;
 
             std::vector<double> s_stats;
             s_stats.reserve(points.size());
+            int s_skipped_counter = 0;
 
             std::vector<double> t_stats;
             t_stats.reserve(points.size());
+            int t_skipped_counter = 0;
 
-            for (auto& p : points) {
-                double value = api->spiral_grid->distr->Calc(p);
-                t_stats.push_back(api->CalculateTStat(value));
-                s_stats.push_back(api->CalculateSStat(p, value));
+            for (int i = 0; i < points.size(); ++i) {
+                double value = api->spiral_grid->distr->Calc(points[i]);
+                try {
+                    t_stats.push_back(api->CalculateTStat(value));
+                } catch(std::exception& e) {
+                    std::cerr << "error: could not calculate t stat for point #" << i << " (" <<
+                    points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
+                    std::cerr << "warning: t stat for point #" << i << " will be skipped" << std::endl;
+                    ++t_skipped_counter;
+                }
+                try {
+                    s_stats.push_back(api->CalculateSStat(points[i], value));
+                } catch(std::exception& e) {
+                    std::cerr << "error: could not calculate s stat for point #" << i << " (" <<
+                    points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
+                    std::cerr << "warning: s stat for point #" << i << " will be skipped" << std::endl;
+                    ++s_skipped_counter;
+                }
             }
 
-            double *OrdUnif = new double[t_stats.size()];
-            double KS_measure, KS_estim, AD_measure, AD_estim;
-            StTests1D(OrdUnif, KS_measure, KS_estim, AD_measure, AD_estim, t_stats.data(), t_stats.size());
-            std::cout << "KS_measure=" << KS_measure << " KS_estim=" << KS_estim << std::endl;
-            std::cout << "AD_measure=" << AD_measure << " AD_estim=" << AD_estim << std::endl;
+            if (t_skipped_counter)
+                std::cerr << "warning: " << t_skipped_counter << " points were skipped for t stat calculation" << std::endl;
+            if (s_skipped_counter)
+                std::cerr << "warning: " << s_skipped_counter << " points were skipped for s stat calculation" << std::endl;
+
+            if (t_stats.size() != 0) {
+                double *OrdUnif = new double[t_stats.size()];
+                double KS_measure, KS_estim, AD_measure, AD_estim;
+                StTests1D(OrdUnif, KS_measure, KS_estim, AD_measure, AD_estim, t_stats.data(), t_stats.size());
+                std::cout << "t statistics results:" << std::endl;
+                std::cout << "KS_measure=" << KS_measure << " KS_estim=" << KS_estim << std::endl;
+                std::cout << "AD_measure=" << AD_measure << " AD_estim=" << AD_estim << std::endl;
+                delete[] OrdUnif;
+            }
+
+            if (s_stats.size() != 0) {
+                double *OrdUnif = new double[s_stats.size()];
+                double KS_measure, KS_estim, AD_measure, AD_estim;
+                StTests1D(OrdUnif, KS_measure, KS_estim, AD_measure, AD_estim, s_stats.data(), s_stats.size());
+                std::cout << "s statistics results:" << std::endl;
+                std::cout << "KS_measure=" << KS_measure << " KS_estim=" << KS_estim << std::endl;
+                std::cout << "AD_measure=" << AD_measure << " AD_estim=" << AD_estim << std::endl;
+                delete[] OrdUnif;
+            }
 
             response["body"]["t"] = t_stats;
             response["body"]["s"] = s_stats;
