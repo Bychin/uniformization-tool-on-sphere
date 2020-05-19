@@ -15,13 +15,13 @@ class AngularGauss {
     ublas::matrix<double> lambda;
     double det_lambda;
 
-    void InvMatrix(ublas::matrix<double>&, ublas::matrix<double>&);
-    double Det(ublas::matrix<double>&);
-    double InnerProduct(std::array<double, 3>&, std::array<double, 3>&);
+    void InvMatrix(const ublas::matrix<double>&, ublas::matrix<double>&);
+    double Det(const ublas::matrix<double>&);
+    double InnerProduct(const std::array<double, 3>&, const std::array<double, 3>&);
 
 public:
-    AngularGauss(std::array<double, 3>&, ublas::matrix<double>&);
-    double Calc(std::array<double, 3>&);
+    AngularGauss(const std::array<double, 3>&, const ublas::matrix<double>&);
+    double Calc(const std::array<double, 3>&);
     std::array<double, 3> Mean();
 };
 

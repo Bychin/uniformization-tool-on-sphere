@@ -27,25 +27,25 @@ class ClassicGrid {
     std::vector<std::vector<std::array<std::array<int, 2>, 4>>> trapeziums;
 
     void GenerateGridAndEvaluateFunc();
-    std::tuple<int, std::array<int, 2>> GetNextTrapeziumIndices(int prev_side, std::array<int, 2>& prev_trapezium_indices);
-    std::array<int, 2> GetUpperTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices);
-    std::array<int, 2> GetLowerTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices);
-    std::array<int, 2> GetLeftTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices);
-    std::array<int, 2> GetRightTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices);
+    std::tuple<int, std::array<int, 2>> GetNextTrapeziumIndices(int prev_side, const std::array<int, 2>& prev_trapezium_indices);
+    std::array<int, 2> GetUpperTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices);
+    std::array<int, 2> GetLowerTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices);
+    std::array<int, 2> GetLeftTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices);
+    std::array<int, 2> GetRightTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices);
     std::array<double, 3> FindIntersection(
-        std::array<double, 3>& x1, std::array<double, 3>& x2, double a, double b, double c);
-    std::tuple<int, std::array<double, 3>> ProcessSegment(std::array<std::array<int, 2>, 4>& trapezium,
+        const std::array<double, 3>& x1, const std::array<double, 3>& x2, double a, double b, double c);
+    std::tuple<int, std::array<double, 3>> ProcessSegment(const std::array<std::array<int, 2>, 4>& trapezium,
                                                           int index,
                                                           int start_side,
                                                           double iso_value);
-    int GetTrapeziumIndex(std::array<std::array<int, 2>, 4>& trapezium, double value);
+    int GetTrapeziumIndex(const std::array<std::array<int, 2>, 4>& trapezium, double value);
 
 public:
     AngularGauss* distr;
 
     ClassicGrid(int, AngularGauss*);
-    std::array<double, 3> GetCoordsOfPoint(std::array<double, 2>& point);
-    std::array<double, 2> GetAnglesOfPoint(std::array<double, 3>& point);
+    std::array<double, 3> GetCoordsOfPoint(const std::array<double, 2>& point);
+    std::array<double, 2> GetAnglesOfPoint(const std::array<double, 3>& point);
     std::vector<std::array<double, 3>> GetIsolineCoords(double iso_value);
 };
 

@@ -37,8 +37,8 @@ void ClassicGrid::GenerateGridAndEvaluateFunc() {
     }
 
     values.reserve(div * (div + 1));
-    for (auto it = points.begin(); it != points.end(); ++it) {
-        values[it->second] =  distr->Calc(it->second); //function_on_grid(it->second);
+    for (const auto& it : points) {
+        values[it.second] =  distr->Calc(it.second); //function_on_grid(it->second);
     }
 
     /* trapezium is stored as 4 vertices from A to D anticlockwise:
@@ -70,7 +70,7 @@ void ClassicGrid::GenerateGridAndEvaluateFunc() {
 
 // GetCoordsOfPoint converts spherical coordinates of a point to Cartesian.
 // TODO @classmethod or static
-std::array<double, 3> ClassicGrid::GetCoordsOfPoint(std::array<double, 2>& point) {
+std::array<double, 3> ClassicGrid::GetCoordsOfPoint(const std::array<double, 2>& point) {
     double theta = point[0], phi = point[1];
 
     double si = std::sin(theta);
@@ -79,21 +79,19 @@ std::array<double, 3> ClassicGrid::GetCoordsOfPoint(std::array<double, 2>& point
     double sj = std::sin(phi);
     double cj = std::cos(phi);
 
-    // std::array<double, 3> coords = ;
-    return {ci * sj, si * sj, cj}; // X, Y, Z //coords;
+    return {ci * sj, si * sj, cj}; // X, Y, Z
 }
 
 // GetAnglesOfPoint converts Cartesian coordinates of a point to spherical.
 // TODO @classmethod or static
-std::array<double, 2> ClassicGrid::GetAnglesOfPoint(std::array<double, 3>& point) {
+std::array<double, 2> ClassicGrid::GetAnglesOfPoint(const std::array<double, 3>& point) {
     double theta = std::atan2(point[1], point[0]); // arctg(y/x)
     if (theta < 0) {
         theta += 2 * M_PI; // due to our classic grid construction logic
     }
     double phi = std::acos(point[2]); // arccos(z)
 
-    // std::array<double, 2> angles = ;
-    return {theta, phi}; // angles;
+    return {theta, phi};
 }
 
 // GetIsolineCoords returns points' coordinates for isoline with value 'iso_value'.
@@ -144,25 +142,19 @@ std::vector<std::array<double, 3>> ClassicGrid::GetIsolineCoords(double iso_valu
 }
 
 std::tuple<int, std::array<int, 2>> ClassicGrid::GetNextTrapeziumIndices(int prev_side,
-                                                                         std::array<int, 2>& prev_trapezium_indices) {
-    // std::tuple<int, std::array<int, 2>> result;
-
+                                                                         const std::array<int, 2>& prev_trapezium_indices) {
     switch (prev_side) {
     case 0: // we must get the one above
         return std::make_tuple(2, GetUpperTrapeziumIndices(prev_trapezium_indices));
-        // return result;
 
     case 1: // get the right one
         return std::make_tuple(3, GetRightTrapeziumIndices(prev_trapezium_indices));
-        // return result;
 
     case 2: // get the lower one
         return std::make_tuple(0, GetLowerTrapeziumIndices(prev_trapezium_indices));
-        // return result;
 
     case 3: // get the left one
         return std::make_tuple(1, GetLeftTrapeziumIndices(prev_trapezium_indices));
-        // return result;
 
     default:
         throw std::invalid_argument("GetNextTrapeziumIndices: got invalid prev_side argument: " +
@@ -170,19 +162,19 @@ std::tuple<int, std::array<int, 2>> ClassicGrid::GetNextTrapeziumIndices(int pre
     }
 }
 
-std::array<int, 2> ClassicGrid::GetUpperTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices) {
+std::array<int, 2> ClassicGrid::GetUpperTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices) {
     int i = prev_trapezium_indices[0], j = prev_trapezium_indices[1];
     assert(j != 0);
     return {i, j - 1};
 }
 
-std::array<int, 2> ClassicGrid::GetLowerTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices) {
+std::array<int, 2> ClassicGrid::GetLowerTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices) {
     int i = prev_trapezium_indices[0], j = prev_trapezium_indices[1];
     assert(j != trapeziums[i].size() - 1);
     return {i, j + 1};
 }
 
-std::array<int, 2> ClassicGrid::GetLeftTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices) {
+std::array<int, 2> ClassicGrid::GetLeftTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices) {
     int i = prev_trapezium_indices[0], j = prev_trapezium_indices[1];
     if (i == 0) {
         i = trapeziums.size();
@@ -190,7 +182,7 @@ std::array<int, 2> ClassicGrid::GetLeftTrapeziumIndices(std::array<int, 2>& prev
     return {i - 1, j};
 }
 
-std::array<int, 2> ClassicGrid::GetRightTrapeziumIndices(std::array<int, 2>& prev_trapezium_indices) {
+std::array<int, 2> ClassicGrid::GetRightTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices) {
     int i = prev_trapezium_indices[0], j = prev_trapezium_indices[1];
     if (i == trapeziums.size() - 1) {
         i = -1;
@@ -202,7 +194,7 @@ std::array<int, 2> ClassicGrid::GetRightTrapeziumIndices(std::array<int, 2>& pre
 // where x1 = f^(-1)(a); x2 = f^(-1)(b); sign((a - c) * (b - c)) should be -1.
 // Note that x1 and x2 - Cartesian coordinates of a point.
 std::array<double, 3> ClassicGrid::FindIntersection(
-    std::array<double, 3>& x1, std::array<double, 3>& x2, double a, double b, double c) {
+        const std::array<double, 3>& x1, const std::array<double, 3>& x2, double a, double b, double c) {
     double k = (c - a) / (b - a);
     if (k >= 1.) {
         std::cerr << "FindIntersection, k=" << k << ", x1=" << x1.data() << ", x2=" << x2.data()
@@ -221,7 +213,7 @@ std::array<double, 3> ClassicGrid::FindIntersection(
 // start_side is 0 - AD, 1 - DC, 2 - CB, 3 - BA
 // end_side, end_point are returned
 std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
-    std::array<std::array<int, 2>, 4>& trapezium, int index, int start_side, double iso_value) {
+        const std::array<std::array<int, 2>, 4>& trapezium, int index, int start_side, double iso_value) {
     int end_side = -1;
     std::array<double, 3> point_1, point_2;
 
@@ -393,8 +385,8 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
     return std::make_tuple(end_side, end_point);
 }
 
-// For marching squares algorithm.
-int ClassicGrid::GetTrapeziumIndex(std::array<std::array<int, 2>, 4>& trapezium, double value) {
+// GetTrapeziumIndex return the trapezium index needed for marching squares algorithm.
+int ClassicGrid::GetTrapeziumIndex(const std::array<std::array<int, 2>, 4>& trapezium, double value) {
     int index = 0;
 
     // in a clockwise direction

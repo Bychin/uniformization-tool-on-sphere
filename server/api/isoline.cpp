@@ -17,7 +17,7 @@ IsolineAPI::IsolineAPI(std::vector<double>& ratios,
 
 double IsolineAPI::GetIsolineValueByRatio(double ratio) {
     double f1 = 0;
-    double f2 = *std::max_element(spiral_grid->Data().begin(), spiral_grid->Data().end());
+    double f2 = spiral_grid->MaxValue();
     double isoline_value = 0;
 
     double integral = std::numeric_limits<double>::max();
@@ -40,7 +40,7 @@ std::unordered_map<double, std::vector<std::array<double, 3>>> IsolineAPI::GetIs
     std::unordered_map<double, std::vector<std::array<double, 3>>> isolines;
     isolines.reserve(ratios.size());
 
-    for (auto r : ratios) {
+    for (const auto r : ratios) {
         auto value  = GetIsolineValueByRatio(r);
         std::cout << "For ratio=" << r << " got value=" << value << ", start getting isoline coords..." << std::endl;
         auto points = classic_grid->GetIsolineCoords(value);

@@ -126,6 +126,7 @@ double StatsAPI::CalcIntegralOnInfinitesimalCurve(std::array<double, 3>& point1,
         center_point[i] = (point1[i] + point2[i]) / 2;
 
     double gradient_modulus = 1; // TODO np.linalg.norm(self.grad_of_d(middle_point)) // self.grad_of_d = grad(self.distribution.calcForGradient)
+    // Градиент считается приближенно, через величины функции на сетке --- взять соседние точки и решить линейное уравнение, например.
 
     return DistanceBetweenPoints(point1, point2) / gradient_modulus;
 }
@@ -199,7 +200,7 @@ double StatsAPI::CalculateSStat(std::array<double, 3>& point, double value) {
     // TODO add comments to this hard logic
     std::vector<std::array<double, 2>> angles_of_isoline_points;
     angles_of_isoline_points.reserve(isoline_points.size());
-    for (auto& p : isoline_points)
+    for (const auto& p : isoline_points)
         angles_of_isoline_points.push_back(classic_grid->GetAnglesOfPoint(p));
     
     std::vector<int> indices_between_zero_and_phi_mean;

@@ -5,7 +5,7 @@
 
 namespace cfg {
     typedef nlohmann::json Config;
-    const Config GetConfig(std::string);
+    const Config GetConfig(const std::string);
 }
 
 #endif // CFG_HPP

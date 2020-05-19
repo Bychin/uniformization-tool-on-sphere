@@ -11,11 +11,8 @@
 
 class SpiralGrid {
     int points_amount;
+    double max_value; // useful only for functions on grid that have positive values
     //double (*function_on_grid)(std::array<double, 3>&);
-
-    // elementary_part_area is an area of an elementary part of a sphere for
-    // every grid value
-    double elementary_part_area;
 
     // points is the grid in Cartesian coordinates.
     std::vector<std::array<double, 3>> points;
@@ -33,6 +30,7 @@ public:
     SpiralGrid(int, AngularGauss*);
     double CalcIntegralInsideIsoline(double isoline_value);
     const std::vector<double>& Data();
+    double MaxValue();
 };
 
 #endif // SPIRAL_GRID_HPP

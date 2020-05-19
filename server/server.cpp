@@ -36,7 +36,7 @@ std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std:
     if (database.find(key) != database.end())
         return database[key];
 
-    ublas::matrix<double> cov_mat(3, 3); // TODO better appr and func
+    ublas::matrix<double> cov_mat(3, 3);
     cov_mat(0,0) = cov[0], cov_mat(0,1) = cov[1], cov_mat(0,2) = cov[2];
     cov_mat(1,0) = cov[1], cov_mat(1,1) = cov[3], cov_mat(1,2) = cov[4];
     cov_mat(2,0) = cov[2], cov_mat(2,1) = cov[4], cov_mat(2,2) = cov[5];
@@ -44,9 +44,9 @@ std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std:
     std::cout << "Will calculate grids with params: mean=" << mean.data() << ", cov=" << cov.data() << std::endl;
 
     AngularGauss* distribution = new AngularGauss(mean, cov_mat);
-    std::cout << "Will calculate ClassicGrid: mean=" << CONFIG["classic_grid_div"].get<int>() << std::endl;
+    std::cout << "Will calculate ClassicGrid: bw=" << CONFIG["classic_grid_div"].get<int>() << std::endl;
     ClassicGrid* classic_grid = new ClassicGrid(CONFIG["classic_grid_div"].get<int>(), distribution);
-    std::cout << "Will calculate SpiralGrid: mean=" << CONFIG["spiral_grid_points"].get<int>() << std::endl;
+    std::cout << "Will calculate SpiralGrid: n=" << CONFIG["spiral_grid_points"].get<int>() << std::endl;
     SpiralGrid* spiral_grid = new SpiralGrid(CONFIG["spiral_grid_points"].get<int>(), distribution);
     std::cout << "Done with grids" << std::endl;
 
