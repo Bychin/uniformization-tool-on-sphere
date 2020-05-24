@@ -2,24 +2,29 @@
 
 #include <array>
 #include <cmath>
+#include <thread>
 #include <string>
+#include <vector>
 #include <unordered_set>
 
-#include "distributions/angular_gauss.hpp"
+#include "distributions/angular_gauss.hpp" // AngularGauss
+#include "util/cfg.hpp"                    // cfg::CONFIG
+#include "util/util.hpp"                   // Bounds()
 
-ClassicGrid::ClassicGrid(int grid_div, AngularGauss* distr) : div(grid_div), distr(distr) { //double (*distribution_calc)(std::array<double, 3>&)) {
-    //div              = grid_div;
-    //distr = distr;
-    //function_on_grid = distribution_calc;
-
+ClassicGrid::ClassicGrid(int grid_div, AngularGauss* distr) : div(grid_div), distr(distr) {
     GenerateGridAndEvaluateFunc();
 }
 
-// TODO parallel
+void ClassicGrid::EvaluateFuncRoutine(int lower_bound, int upper_bound) {
+    for (int i = lower_bound; i < upper_bound; ++i)
+        values[i] = distr->Calc(cartesian_points[i]);
+}
+
 void ClassicGrid::GenerateGridAndEvaluateFunc() {
     double angle = M_PI / div;
 
     points.reserve(div * (div + 1));
+    cartesian_points.reserve(div * (div + 1));
 
     for (int i = 0; i < div; ++i) { // i goes around the sphere
         double theta = 2 * i * angle;
@@ -32,21 +37,31 @@ void ClassicGrid::GenerateGridAndEvaluateFunc() {
             double cj  = std::cos(phi);
 
             std::array<double, 3> point = {ci * sj, si * sj, cj}; // X, Y, Z
-            points[{i, j}] = point;
+            cartesian_points.push_back(point);
+            points[{i, j}] = cartesian_points.size()-1;
         }
     }
 
     values.reserve(div * (div + 1));
-    for (const auto& it : points) {
-        values[it.second] =  distr->Calc(it.second); //function_on_grid(it->second);
-    }
+
+    int threads_amount = cfg::CONFIG["threads"].get<int>();
+    auto bounds = Bounds(threads_amount, cartesian_points.size());
+    auto threads = new std::thread[threads_amount-1];
+
+    for (int i = 0; i < threads_amount-1; ++i)
+        threads[i] = std::thread(&ClassicGrid::EvaluateFuncRoutine, this, bounds[i], bounds[i+1]);
+
+    EvaluateFuncRoutine(bounds[threads_amount-1], bounds[threads_amount]);
+
+    for (int i = 0; i < threads_amount-1; ++i)
+        threads[i].join();
+    delete[] threads;
 
     /* trapezium is stored as 4 vertices from A to D anticlockwise:
      *   A -<- D          A (== D)
      *  /       \   or   / \
      * B --->--- C      B - C
      */
-    // trapeziums = std::vector<std::vector<std::array<std::array<int, 2>, 4>>>(div);
     trapeziums.reserve(div);
 
     for (int i = 0; i < div; ++i) {
@@ -97,7 +112,7 @@ std::array<double, 2> ClassicGrid::GetAnglesOfPoint(const std::array<double, 3>&
 // GetIsolineCoords returns points' coordinates for isoline with value 'iso_value'.
 // It uses marching squares algorithm (https://en.wikipedia.org/wiki/Marching_squares).
 std::vector<std::array<double, 3>> ClassicGrid::GetIsolineCoords(double iso_value) {
-    const size_t initial_isoline_points_amount = 1000; // TODO move somewhere
+    const size_t initial_isoline_points_amount = 1000;
     std::vector<std::array<double, 3>> isoline_points;
     isoline_points.reserve(initial_isoline_points_amount);
 
@@ -144,7 +159,7 @@ std::vector<std::array<double, 3>> ClassicGrid::GetIsolineCoords(double iso_valu
 std::tuple<int, std::array<int, 2>> ClassicGrid::GetNextTrapeziumIndices(int prev_side,
                                                                          const std::array<int, 2>& prev_trapezium_indices) {
     switch (prev_side) {
-    case 0: // we must get the one above
+    case 0: // we must get the upper one
         return std::make_tuple(2, GetUpperTrapeziumIndices(prev_trapezium_indices));
 
     case 1: // get the right one
@@ -215,7 +230,7 @@ std::array<double, 3> ClassicGrid::FindIntersection(
 std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
         const std::array<std::array<int, 2>, 4>& trapezium, int index, int start_side, double iso_value) {
     int end_side = -1;
-    std::array<double, 3> point_1, point_2;
+    int point_1_index, point_2_index;
 
     // 0 -- 1    1 -- 0
     // |    | or |    |
@@ -224,13 +239,13 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
         if (start_side == 0) {
             end_side = 3;
             // calc A and B
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[1]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[1]];
         } else {
             end_side = 0;
             // calc A and D
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[3]];
         }
     }
 
@@ -241,13 +256,13 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
         if (start_side == 0) {
             end_side = 1;
             // calc C and D
-            point_1 = points[trapezium[2]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[2]];
+            point_2_index = points[trapezium[3]];
         } else {
             end_side = 0;
             // calc A and D
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[3]];
         }
     }
 
@@ -258,13 +273,13 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
         if (start_side == 1) {
             end_side = 2;
             // calc B and C
-            point_1 = points[trapezium[1]];
-            point_2 = points[trapezium[2]];
+            point_1_index = points[trapezium[1]];
+            point_2_index = points[trapezium[2]];
         } else {
             end_side = 1;
             // calc C and D
-            point_1 = points[trapezium[2]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[2]];
+            point_2_index = points[trapezium[3]];
         }
     }
 
@@ -275,13 +290,13 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
         if (start_side == 2) {
             end_side = 3;
             // calc A and B
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[1]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[1]];
         } else {
             end_side = 2;
             // calc B and C
-            point_1 = points[trapezium[1]];
-            point_2 = points[trapezium[2]];
+            point_1_index = points[trapezium[1]];
+            point_2_index = points[trapezium[2]];
         }
     }
 
@@ -292,13 +307,13 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
         if (start_side == 0) {
             end_side = 2;
             // calc B and C
-            point_1 = points[trapezium[1]];
-            point_2 = points[trapezium[2]];
+            point_1_index = points[trapezium[1]];
+            point_2_index = points[trapezium[2]];
         } else {
             end_side = 0;
             // calc A and D
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[3]];
         }
     }
 
@@ -309,13 +324,13 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
         if (start_side == 1) {
             end_side = 3;
             // calc A and B
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[1]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[1]];
         } else {
             end_side = 1;
             // calc C and D
-            point_1 = points[trapezium[2]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[2]];
+            point_2_index = points[trapezium[3]];
         }
     }
 
@@ -327,23 +342,23 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
         if (start_side == 0) {
             end_side = 3;
             // calc A and B
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[1]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[1]];
         } else if (start_side == 3) {
             end_side = 0;
             // calc A and D
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[3]];
         } else if (start_side == 1) {
             end_side = 2;
             // calc B and C
-            point_1 = points[trapezium[1]];
-            point_2 = points[trapezium[2]];
+            point_1_index = points[trapezium[1]];
+            point_2_index = points[trapezium[2]];
         } else { // start_side == 2
             end_side = 1;
             // calc C and D
-            point_1 = points[trapezium[2]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[2]];
+            point_2_index = points[trapezium[3]];
         }
     }
 
@@ -354,23 +369,23 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
         if (start_side == 0) {
             end_side = 1;
             // calc C and D
-            point_1 = points[trapezium[2]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[2]];
+            point_2_index = points[trapezium[3]];
         } else if (start_side == 1) {
             end_side = 0;
             // calc A and D
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[3]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[3]];
         } else if (start_side == 2) {
             end_side = 3;
             // calc A and B
-            point_1 = points[trapezium[0]];
-            point_2 = points[trapezium[1]];
+            point_1_index = points[trapezium[0]];
+            point_2_index = points[trapezium[1]];
         } else { // start_side == 3
             end_side = 2;
             // calc B and C
-            point_1 = points[trapezium[1]];
-            point_2 = points[trapezium[2]];
+            point_1_index = points[trapezium[1]];
+            point_2_index = points[trapezium[2]];
         }
     }
 
@@ -381,7 +396,10 @@ std::tuple<int, std::array<double, 3>> ClassicGrid::ProcessSegment(
                                     " " + std::to_string(start_side));
     }
 
-    auto end_point = FindIntersection(point_1, point_2, values[point_1], values[point_2], iso_value);
+    auto point_1 = cartesian_points[point_1_index];
+    auto point_2 = cartesian_points[point_2_index];
+
+    auto end_point = FindIntersection(point_1, point_2, values[point_1_index], values[point_2_index], iso_value);
     return std::make_tuple(end_side, end_point);
 }
 

@@ -2,6 +2,7 @@
 #include <boost/container_hash/hash.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/lexical_cast.hpp>
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -17,12 +18,12 @@
 #include "distributions/angular_gauss.hpp" // AngularGauss
 #include "grids/classic_grid.hpp"          // ClassicGrid
 #include "grids/spiral_grid.hpp"           // SpiralGrid
-#include "util/cfg.hpp"                    // cfg::Config
+#include "util/cfg.hpp"                    // cfg::CONFIG
 
 namespace ublas = boost::numeric::ublas;
 using json = nlohmann::json;
 
-cfg::Config CONFIG;
+//cfg::Config CONFIG;
 
 // TODO std::tuple<std::array<double, 3>, std::array<double, 6>> -> AngularGaussParams
 // database stores distributions with raw mean and cov parameters.
@@ -33,22 +34,31 @@ std::unordered_map<std::tuple<std::array<double, 3>, std::array<double, 6>>,
 
 std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std::array<double, 6>& cov) {
     auto key = std::make_tuple(mean, cov);
-    if (database.find(key) != database.end())
+    if (database.find(key) != database.end()) {
+        std::cout << "debug: got grids from database" << std::endl;
         return database[key];
+    }
 
     ublas::matrix<double> cov_mat(3, 3);
     cov_mat(0,0) = cov[0], cov_mat(0,1) = cov[1], cov_mat(0,2) = cov[2];
     cov_mat(1,0) = cov[1], cov_mat(1,1) = cov[3], cov_mat(1,2) = cov[4];
     cov_mat(2,0) = cov[2], cov_mat(2,1) = cov[4], cov_mat(2,2) = cov[5];
 
-    std::cout << "Will calculate grids with params: mean=" << mean.data() << ", cov=" << cov.data() << std::endl;
+    std::cout << "debug: going to calculate grids with params: mean=" << mean.data() << ", cov=" << cov.data() << std::endl;
 
     AngularGauss* distribution = new AngularGauss(mean, cov_mat);
-    std::cout << "Will calculate ClassicGrid: bw=" << CONFIG["classic_grid_div"].get<int>() << std::endl;
-    ClassicGrid* classic_grid = new ClassicGrid(CONFIG["classic_grid_div"].get<int>(), distribution);
-    std::cout << "Will calculate SpiralGrid: n=" << CONFIG["spiral_grid_points"].get<int>() << std::endl;
-    SpiralGrid* spiral_grid = new SpiralGrid(CONFIG["spiral_grid_points"].get<int>(), distribution);
-    std::cout << "Done with grids" << std::endl;
+
+    std::cout << "info: going to calculate ClassicGrid with bw=" << cfg::CONFIG["classic_grid_div"].get<int>() << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    ClassicGrid* classic_grid = new ClassicGrid(cfg::CONFIG["classic_grid_div"].get<int>(), distribution);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+    std::cout << "info: ClassicGrid is ready in " << duration.count() << "ms" << std::endl;
+
+    std::cout << "info: going to calculate SpiralGrid with n=" << cfg::CONFIG["spiral_grid_points"].get<int>() << std::endl;
+    start = std::chrono::high_resolution_clock::now();
+    SpiralGrid* spiral_grid = new SpiralGrid(cfg::CONFIG["spiral_grid_points"].get<int>(), distribution);
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+    std::cout << "info: SpiralGrid is ready in " << duration.count() << "ms" << std::endl;
 
     auto result = std::make_tuple(classic_grid, spiral_grid);
     database[key] = result;
@@ -268,8 +278,8 @@ void InitServer(void) {
 
     server.Get("/stop", [&](const Request& req, Response& res) { server.stop(); });
 
-    const auto host = CONFIG["host"].get<std::string>();
-    const auto port = CONFIG["port"].get<int>();
+    const auto host = cfg::CONFIG["host"].get<std::string>();
+    const auto port = cfg::CONFIG["port"].get<int>();
 
     server.listen(host.c_str(), port);
 }
@@ -280,6 +290,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    CONFIG = cfg::GetConfig(argv[1]);
+    cfg::CONFIG = cfg::GetConfig(argv[1]);
     InitServer();
 }

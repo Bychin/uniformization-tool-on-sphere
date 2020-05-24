@@ -3,5 +3,7 @@
     "port": 8080,
 
     "spiral_grid_points": 1000000,
-    "classic_grid_div": 720
+    "classic_grid_div": 1440,
+
+    "threads": 4
 }

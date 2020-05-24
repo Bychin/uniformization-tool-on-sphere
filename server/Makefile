@@ -9,8 +9,8 @@ INC_DIR = ./include
 
 CXXFLAGS = -I$(INC_DIR) -I./ $(BOOST_INC) -std=c++17 # TODO test with -O2
 
-SERVER_OBJ = server.o cfg.o angular_gauss.o classic_grid.o spiral_grid.o \
-	isoline_api.o stats_api.o
+SERVER_OBJ = server.o cfg.o util.o angular_gauss.o classic_grid.o \
+	spiral_grid.o isoline_api.o stats_api.o 
 
 TEST_SERVER_OBJ = test_angular_gauss_distribution.o
 
@@ -52,6 +52,9 @@ server.o:
 
 cfg.o:
 	$(CXXC) $(CXXFLAGS) -c -o $(BUILD_DIR)/$@ util/cfg.cpp
+
+util.o:
+	$(CXXC) $(CXXFLAGS) -c -o $(BUILD_DIR)/$@ util/util.cpp
 
 angular_gauss.o:
 	$(CXXC) $(CXXFLAGS) -c -o $(BUILD_DIR)/$@ distributions/angular_gauss.cpp

@@ -19,14 +19,22 @@ class ClassicGrid {
     // TODO std::array<std::array<int, 2>, 4> -> Trapezium?
 
     // points is a map of (i, j) pairs, that are indices of grid points, to
-    // their (x, y, z) coordinates.
-    std::unordered_map<std::array<int, 2>, std::array<double, 3>, boost::hash<std::array<int, 2>>> points;
-    // values is an evaluated function on grid.
-    std::unordered_map<std::array<double, 3>, double, boost::hash<std::array<double, 3>>> values;
+    // the same point in Cartesian coordinates' indicies
+    std::unordered_map<std::array<int, 2>, int, boost::hash<std::array<int, 2>>> points;
+
+    // cartesian_points is a vector of points in Cartesian coordinates
+    std::vector<std::array<double, 3>> cartesian_points;
+
+    // values is an evaluated function on grid, value in i'th position
+    // corresponds to the i'th point in cartesian_points vector
+    std::vector<double> values;
+
     // trapeziums are the elementary objects of which the grid consists.
     std::vector<std::vector<std::array<std::array<int, 2>, 4>>> trapeziums;
 
     void GenerateGridAndEvaluateFunc();
+    void EvaluateFuncRoutine(int lower_bound, int upper_bound);
+
     std::tuple<int, std::array<int, 2>> GetNextTrapeziumIndices(int prev_side, const std::array<int, 2>& prev_trapezium_indices);
     std::array<int, 2> GetUpperTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices);
     std::array<int, 2> GetLowerTrapeziumIndices(const std::array<int, 2>& prev_trapezium_indices);
