@@ -325,14 +325,22 @@ double StatsAPI::CalculateSStat(const CoordsOfPoint& point, double value) const 
     auto vec_A = GetNormalizedVector(normed_mean, point_A);
     auto vec_I = GetNormalizedVector(normed_mean, intersection_point_coords);
 
-    double isoline_integral = CalcIntegralOnFullIsoline(isoline_points);
+    double isoline_integral_on_left_curve = CalcIntegralOnLeftCurveOnIsoline(isoline_points, intersection_point_index, point_index);
+    double isoline_integral_on_right_curve = CalcIntegralOnRightCurveOnIsoline(isoline_points, intersection_point_index, point_index);
+    
+    // double isoline_integral = CalcIntegralOnFullIsoline(isoline_points);
+    //
+    // the sum does not exactly coincide with the calculated integral,
+    // but the difference is in the ~16th digit
+    double isoline_integral = isoline_integral_on_left_curve + isoline_integral_on_right_curve;
+
     double curve_integral = 0;
     bool clockwiseDirection = false;
     if (CheckClockwiseDirection(normed_mean, vec_I, vec_A)) {
         clockwiseDirection = true;
-        curve_integral = CalcIntegralOnRightCurveOnIsoline(isoline_points, intersection_point_index, point_index);
+        curve_integral = isoline_integral_on_right_curve;
     } else {
-        curve_integral = CalcIntegralOnLeftCurveOnIsoline(isoline_points, intersection_point_index, point_index);
+        curve_integral = isoline_integral_on_left_curve;
     }
 
     // return clockwiseDirection too
