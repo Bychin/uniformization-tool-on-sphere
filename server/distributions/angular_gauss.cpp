@@ -1,6 +1,7 @@
 #include "angular_gauss.hpp"
 
 #include <array>
+#include <cassert>
 #include <cmath>
 
 #include <boost/math/special_functions/erf.hpp>

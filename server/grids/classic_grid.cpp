@@ -1,6 +1,7 @@
 #include "classic_grid.hpp"
 
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <thread>
 #include <string>

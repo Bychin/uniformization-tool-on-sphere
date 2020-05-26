@@ -1,5 +1,6 @@
 #include "util.hpp"
 
+#include <cassert>
 #include <cmath>
 #include <vector>
 
