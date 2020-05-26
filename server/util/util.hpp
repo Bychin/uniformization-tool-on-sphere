@@ -1,5 +1,5 @@
-#ifndef UTIL_HPP
-#define UTIL_HPP
+#ifndef SERVER_UTIL_HPP
+#define SERVER_UTIL_HPP
 
 #include <vector>
 
@@ -8,4 +8,4 @@
 // start of second bound.
 std::vector<int> Bounds(int parts_amount, int points_amount);
 
-#endif // UTIL_HPP
+#endif // SERVER_UTIL_HPP

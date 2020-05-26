@@ -1,5 +1,5 @@
-#ifndef CFG_HPP
-#define CFG_HPP
+#ifndef UTIL_CFG_HPP
+#define UTIL_CFG_HPP
 
 #include "nlohmann/json.hpp"
 
@@ -14,4 +14,4 @@ namespace cfg {
     inline Config kConfig;
 }
 
-#endif // CFG_HPP
+#endif // UTIL_CFG_HPP
