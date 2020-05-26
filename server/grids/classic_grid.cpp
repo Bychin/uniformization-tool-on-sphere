@@ -101,13 +101,14 @@ CoordsOfPoint ClassicGrid::GetCoordsOfPoint(const AnglesOfPoint& point) {
 }
 
 AnglesOfPoint ClassicGrid::GetAnglesOfPoint(const CoordsOfPoint& point) {
-    double theta = std::atan2(point[1], point[0]); // arctg(y/x)
-    if (theta < 0) {
-        theta += 2 * M_PI; // due to our classic grid construction logic
+    double phi = std::atan2(point[1], point[0]); // arctg(y/x)
+    if (phi < 0) {
+        phi += 2 * M_PI; // due to our classic grid construction logic
     }
-    double phi = std::acos(point[2]); // arccos(z)
 
-    return {theta, phi};
+    double theta = std::acos(point[2]); // arccos(z)
+
+    return {phi, theta};
 }
 
 std::vector<CoordsOfPoint> ClassicGrid::GetIsolineCoords(double iso_value) {

@@ -11,7 +11,8 @@ typedef std::array<ClassicGridPoint, 4> Trapezium;
 // TrapeziumIndex represents (i, j) pair as index of trapezium on a classic grid
 typedef std::array<int, 2> TrapeziumIndex;
 
-// AnglesOfPoint is a 3D point in spherical coordinates
+// AnglesOfPoint is a 3D point in spherical coordinates,
+// (phi, theta) pair, where phi - azimuthal angle, theta - polar angle
 typedef std::array<double, 2> AnglesOfPoint;
 // CoordsOfPoint is a 3D point in Cartesian coordinates
 typedef std::array<double, 3> CoordsOfPoint;
