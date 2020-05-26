@@ -11,10 +11,11 @@
 
 class SpiralGrid {
     int points_amount;
-    double max_value; // useful only for functions on grid that have positive values
+    double max_value;
 
     // points is the grid in Cartesian coordinates.
     std::vector<std::array<double, 3>> points;
+
     // values is an evaluated function on grid, value in i'th position
     // corresponds to the i'th point in points vector
     std::vector<double> values;

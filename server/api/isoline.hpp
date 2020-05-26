@@ -8,6 +8,9 @@
 #include <grids/classic_grid.hpp>
 #include <grids/spiral_grid.hpp>
 
+typedef std::array<double, 3> CartesianPoint;
+typedef std::vector<CartesianPoint> IsolineCoords;
+
 class IsolineAPI {
     std::vector<double> ratios;
 
@@ -20,8 +23,9 @@ public:
     IsolineAPI(std::vector<double>& ratios,
                ClassicGrid* classic_grid,
                SpiralGrid* spiral_grid);
-    // TODO bool Validate();
-    std::unordered_map<double, std::vector<std::array<double, 3>>> GetIsolines();
+
+    void Validate();
+    std::unordered_map<double, IsolineCoords> GetIsolines();
 };
 
 #endif // ISOLINE_HPP

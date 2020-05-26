@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "distributions/angular_gauss.hpp" // AngularGauss
-#include "util/cfg.hpp"                    // cfg::CONFIG
+#include "util/cfg.hpp"                    // cfg::kConfig
 #include "util/util.hpp"                   // Bounds()
 
 SpiralGrid::SpiralGrid(int N, AngularGauss* distr) : points_amount(N), distr(distr) {
@@ -58,7 +58,7 @@ double SpiralGrid::EvaluateFuncRoutine(int lower_bound, int upper_bound) {
 void SpiralGrid::EvaluateFunc() {
     values.resize(points_amount);
 
-    int threads_amount = cfg::CONFIG["threads"].get<int>();
+    int threads_amount = cfg::kConfig["threads"].get<int>();
     auto bounds = Bounds(threads_amount, points_amount);
     auto futures = new std::future<double>[threads_amount-1];
 

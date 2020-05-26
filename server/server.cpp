@@ -9,21 +9,19 @@
 #include <tuple>
 #include <exception>
 
-#include "psvt/statistics.cpp" // Yeah this source is VERY messy
+#include "psvt/statistics.cpp"
 #include "nlohmann/json.hpp"
 #include "yhirose/httplib.h"
 
 #include "api/isoline.hpp"                 // IsolineAPI
-#include "api/stats.hpp"                   // IsolineAPI
+#include "api/stats.hpp"                   // StatsAPI
 #include "distributions/angular_gauss.hpp" // AngularGauss
 #include "grids/classic_grid.hpp"          // ClassicGrid
 #include "grids/spiral_grid.hpp"           // SpiralGrid
-#include "util/cfg.hpp"                    // cfg::CONFIG
+#include "util/cfg.hpp"                    // cfg::kConfig
 
 namespace ublas = boost::numeric::ublas;
 using json = nlohmann::json;
-
-//cfg::Config CONFIG;
 
 // TODO std::tuple<std::array<double, 3>, std::array<double, 6>> -> AngularGaussParams
 // database stores distributions with raw mean and cov parameters.
@@ -44,21 +42,21 @@ std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std:
     cov_mat(1,0) = cov[1], cov_mat(1,1) = cov[3], cov_mat(1,2) = cov[4];
     cov_mat(2,0) = cov[2], cov_mat(2,1) = cov[4], cov_mat(2,2) = cov[5];
 
-    std::cout << "debug: going to calculate grids with params: mean=" << mean.data() << ", cov=" << cov.data() << std::endl;
+    std::cout << "debug: going to calculate grids with params: mean=" << mean.data() << ", cov=" << cov.data() << std::endl; // TODO
 
     AngularGauss* distribution = new AngularGauss(mean, cov_mat);
 
-    std::cout << "info: going to calculate ClassicGrid with bw=" << cfg::CONFIG["classic_grid_div"].get<int>() << std::endl;
+    std::cout << "debug: going to calculate ClassicGrid with bw=" << cfg::kConfig["classic_grid_div"].get<int>() << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    ClassicGrid* classic_grid = new ClassicGrid(cfg::CONFIG["classic_grid_div"].get<int>(), distribution);
+    ClassicGrid* classic_grid = new ClassicGrid(cfg::kConfig["classic_grid_div"].get<int>(), distribution);
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
-    std::cout << "info: ClassicGrid is ready in " << duration.count() << "ms" << std::endl;
+    std::cout << "debug: ClassicGrid is ready in " << duration.count() << "ms" << std::endl;
 
-    std::cout << "info: going to calculate SpiralGrid with n=" << cfg::CONFIG["spiral_grid_points"].get<int>() << std::endl;
+    std::cout << "debug: going to calculate SpiralGrid with n=" << cfg::kConfig["spiral_grid_points"].get<int>() << std::endl;
     start = std::chrono::high_resolution_clock::now();
-    SpiralGrid* spiral_grid = new SpiralGrid(cfg::CONFIG["spiral_grid_points"].get<int>(), distribution);
+    SpiralGrid* spiral_grid = new SpiralGrid(cfg::kConfig["spiral_grid_points"].get<int>(), distribution);
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
-    std::cout << "info: SpiralGrid is ready in " << duration.count() << "ms" << std::endl;
+    std::cout << "debug: SpiralGrid is ready in " << duration.count() << "ms" << std::endl;
 
     auto result = std::make_tuple(classic_grid, spiral_grid);
     database[key] = result;
@@ -68,16 +66,16 @@ std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std:
 
 IsolineAPI* GetIsolineAPI(const httplib::Request& req) {
     if (!req.has_param("mean"))
-        throw std::invalid_argument("no 'mean' URL param");
+        throw std::invalid_argument("invalid request: no 'mean' URL param");
     if (!req.has_param("cov"))
-        throw std::invalid_argument("no 'cov' URL param");
+        throw std::invalid_argument("invalid request: no 'cov' URL param");
     if (!req.has_param("ratio"))
-        throw std::invalid_argument("no 'ratio' URL param");
+        throw std::invalid_argument("invalid request: no 'ratio' URL param");
 
     std::vector<std::string> raw_mean_vec;
     boost::algorithm::split(raw_mean_vec, req.get_param_value("mean"), boost::is_any_of(","));
     if (raw_mean_vec.size() != 3) {
-        throw std::invalid_argument("wrong 'mean' URL param");
+        throw std::invalid_argument("invalid request: wrong 'mean' URL param");
     }
 
     std::array<double, 3> mean_vec;
@@ -87,7 +85,7 @@ IsolineAPI* GetIsolineAPI(const httplib::Request& req) {
     std::vector<std::string> raw_cov_vec;
     boost::algorithm::split(raw_cov_vec, req.get_param_value("cov"), boost::is_any_of(","));
     if (raw_cov_vec.size() != 6) {
-        throw std::invalid_argument("wrong 'cov' URL param");
+        throw std::invalid_argument("invalid request: wrong 'cov' URL param");
     }
 
     std::array<double, 6> cov_vec;
@@ -97,7 +95,7 @@ IsolineAPI* GetIsolineAPI(const httplib::Request& req) {
     std::vector<std::string> raw_ratios;
     boost::algorithm::split(raw_ratios, req.get_param_value("ratio"), boost::is_any_of(","));
     if (raw_ratios.size() == 0) {
-        throw std::invalid_argument("wrong 'ratio' URL param");
+        throw std::invalid_argument("invalid request: wrong 'ratio' URL param");
     }
 
     std::vector<double> ratios_vec(raw_ratios.size());
@@ -108,7 +106,7 @@ IsolineAPI* GetIsolineAPI(const httplib::Request& req) {
     SpiralGrid* spiral_grid;
     std::tie(classic_grid, spiral_grid) = GetGrids(mean_vec, cov_vec);
 
-    IsolineAPI* api = new IsolineAPI(ratios_vec, classic_grid, spiral_grid); // TODO clever pointer + destructors (for everything lol)
+    IsolineAPI* api = new IsolineAPI(ratios_vec, classic_grid, spiral_grid);
     return api;
 }
 
@@ -116,16 +114,16 @@ StatsAPI* GetStatsAPI(const httplib::Request& req) {
     json params = json::parse(req.body);
 
     if (params.find("mean") == params.end())
-        throw std::invalid_argument("no 'mean' data");
+        throw std::invalid_argument("invalid request: no 'mean' data");
     if (params.find("cov") == params.end())
-        throw std::invalid_argument("no 'cov' data");
+        throw std::invalid_argument("invalid request: no 'cov' data");
     if (params.find("points") == params.end())
-        throw std::invalid_argument("no 'points' data");
+        throw std::invalid_argument("invalid request: no 'points' data");
 
     std::vector<std::string> raw_mean_vec;
     boost::algorithm::split(raw_mean_vec, params["mean"].get<std::string>(), boost::is_any_of(","));
     if (raw_mean_vec.size() != 3) {
-        throw std::invalid_argument("wrong 'mean' data");
+        throw std::invalid_argument("invalid request: wrong 'mean' data");
     }
 
     std::array<double, 3> mean_vec;
@@ -135,7 +133,7 @@ StatsAPI* GetStatsAPI(const httplib::Request& req) {
     std::vector<std::string> raw_cov_vec;
     boost::algorithm::split(raw_cov_vec, params["cov"].get<std::string>(), boost::is_any_of(","));
     if (raw_cov_vec.size() != 6) {
-        throw std::invalid_argument("wrong 'cov' data");
+        throw std::invalid_argument("invalid request: wrong 'cov' data");
     }
 
     std::array<double, 6> cov_vec;
@@ -145,7 +143,7 @@ StatsAPI* GetStatsAPI(const httplib::Request& req) {
     std::vector<std::string> raw_points;
     boost::algorithm::split(raw_points, params["points"].get<std::string>(), boost::is_any_of(","));
     if (raw_points.size() == 0 || raw_points.size()%3 != 0) {
-        throw std::invalid_argument("wrong 'points' data");
+        throw std::invalid_argument("invalid request: wrong 'points' data");
     }
 
     std::vector<std::array<double, 3>> points_vec(raw_points.size() / 3);
@@ -162,7 +160,7 @@ StatsAPI* GetStatsAPI(const httplib::Request& req) {
     SpiralGrid* spiral_grid;
     std::tie(classic_grid, spiral_grid) = GetGrids(mean_vec, cov_vec);
 
-    StatsAPI* api = new StatsAPI(points_vec, classic_grid, spiral_grid); // TODO clever pointer + destructors (for everything lol)
+    StatsAPI* api = new StatsAPI(points_vec, classic_grid, spiral_grid);
     return api;
 }
 
@@ -172,14 +170,19 @@ void InitServer(void) {
     Server server;
 
     server.Get("/api/isoline", [&](const Request& req, Response& res) {
+        auto start = std::chrono::high_resolution_clock::now();
+        std::cout << "debug: /api/isoline: got new GET request\n";
+
         res.status = 200;
-        res.set_header("Access-Control-Allow-Origin", "*"); // TODO
+        res.set_header("Access-Control-Allow-Origin", "*");
         json response;
 
         try {
             auto api = GetIsolineAPI(req);
+            api->Validate();
             auto isolines = api->GetIsolines();
             response["body"] = isolines;
+            delete api;
         } catch (std::exception& e) {
             response["code"] = 500;
             response["body"] = e.what();
@@ -189,17 +192,21 @@ void InitServer(void) {
 
         response["code"] = 200;
         res.set_content(response.dump(), "application/json");
+
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+        std::cout << "debug: /api/isoline: response is ready in " << duration.count() << "ms" << std::endl;
     });
 
     server.Post("/api/stats", [&](const Request& req, Response& res) {
         res.status = 200;
-        res.set_header("Access-Control-Allow-Origin", "*"); // TODO
+        res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Request-Method", "POST");
         res.set_header("Access-Control-Allow-Headers", "*");
         json response;
 
         try {
             auto api = GetStatsAPI(req);
+            //api->Validate();
             auto points = api->points;
 
             std::vector<double> s_stats;
@@ -258,6 +265,8 @@ void InitServer(void) {
             response["body"]["t"] = t_stats;
             response["body"]["s"] = s_stats;
 
+            delete api;
+
         } catch (std::exception& e) {
             response["code"] = 500;
             response["body"] = e.what();
@@ -271,15 +280,16 @@ void InitServer(void) {
 
     server.Options("/api/stats", [](const Request& req, Response& res) {
         res.status = 204;
+        // WARNING: for local use only
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Request-Method", "POST");
         res.set_header("Access-Control-Allow-Headers", "*");
     });
 
-    server.Get("/stop", [&](const Request& req, Response& res) { server.stop(); });
+    server.Get("/stop", [&](const Request& req, Response& res) {server.stop();});
 
-    const auto host = cfg::CONFIG["host"].get<std::string>();
-    const auto port = cfg::CONFIG["port"].get<int>();
+    const auto host = cfg::kConfig["host"].get<std::string>();
+    const auto port = cfg::kConfig["port"].get<int>();
 
     server.listen(host.c_str(), port);
 }
@@ -290,6 +300,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    cfg::CONFIG = cfg::GetConfig(argv[1]);
+    cfg::kConfig = cfg::GetConfig(argv[1]);
     InitServer();
 }
