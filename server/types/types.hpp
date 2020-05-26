@@ -8,6 +8,8 @@
 typedef std::array<int, 2> ClassicGridPoint;
 // Trapezium is a simple element that makes up a classic grid
 typedef std::array<ClassicGridPoint, 4> Trapezium;
+// TrapeziumIndex represents (i, j) pair as index of trapezium on a classic grid
+typedef std::array<int, 2> TrapeziumIndex;
 
 // AnglesOfPoint is a 3D point in spherical coordinates
 typedef std::array<double, 2> AnglesOfPoint;
