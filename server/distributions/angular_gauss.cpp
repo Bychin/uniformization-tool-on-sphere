@@ -8,6 +8,8 @@
 #include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 
+#include "types/types.hpp"
+
 namespace ublas = boost::numeric::ublas;
 
 void AngularGauss::InvMatrix(const ublas::matrix<double>& input_mat, ublas::matrix<double>& inverse_mat) {
@@ -21,7 +23,9 @@ void AngularGauss::InvMatrix(const ublas::matrix<double>& input_mat, ublas::matr
     lu_substitute(A, pm, inverse_mat);
 }
 
-double AngularGauss::Det(const ublas::matrix<double>& m) {
+double AngularGauss::Det(const ublas::matrix<double>& m) const {
+    assert(m.size1() == 3 && m.size2() == 3);
+
     const double a = m(0, 0);
     const double b = m(0, 1);
     const double c = m(0, 2);
@@ -38,7 +42,7 @@ double AngularGauss::Det(const ublas::matrix<double>& m) {
     return determinant;
 }
 
-double AngularGauss::InnerProduct(const std::array<double, 3>& x, const std::array<double, 3>& y) {
+double AngularGauss::InnerProduct(const Vector& x, const Vector& y) const {
     double result = 0;
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
@@ -47,7 +51,7 @@ double AngularGauss::InnerProduct(const std::array<double, 3>& x, const std::arr
     return result;
 }
 
-AngularGauss::AngularGauss(const std::array<double, 3>& mean_vec, const ublas::matrix<double>& cov_mat) {
+AngularGauss::AngularGauss(const Vector& mean_vec, const ublas::matrix<double>& cov_mat) {
     assert(cov_mat.size1() == 3 && cov_mat.size2() == 3);
 
     std::copy(mean_vec.begin(), mean_vec.end(), mean.begin());
@@ -57,7 +61,7 @@ AngularGauss::AngularGauss(const std::array<double, 3>& mean_vec, const ublas::m
     mean_norm  = std::sqrt(InnerProduct(mean, mean));
 }
 
-double AngularGauss::Calc(const std::array<double, 3>& u) {
+double AngularGauss::Calc(const CoordsOfPoint& u) const {
     double u_norm = std::sqrt(InnerProduct(u, u));
     double z      = InnerProduct(mean, u) / u_norm;
 
@@ -68,6 +72,6 @@ double AngularGauss::Calc(const std::array<double, 3>& u) {
                     std::exp(0.5 * z * z) * (1 + z * z) * (1 + boost::math::erf(z / M_SQRT2)));
 }
 
-std::array<double, 3> AngularGauss::Mean() {
+const std::array<double, 3> AngularGauss::Mean(void) const {
     return std::array<double, 3>{mean};
 }
