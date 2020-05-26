@@ -10,7 +10,7 @@ INC_DIR = ./include
 CXXFLAGS = -I$(INC_DIR) -I./ $(BOOST_INC) -std=c++17 -O2
 
 SERVER_OBJ = server.o cfg.o util.o angular_gauss.o classic_grid.o \
-	spiral_grid.o isoline_api.o stats_api.o 
+	spiral_grid.o isoline_api.o stats_api.o statistics.o
 
 
 all:
@@ -37,6 +37,9 @@ server: $(SERVER_OBJ)
 
 server.o:
 	$(CXXC) $(CXXFLAGS) -c -o $(BUILD_DIR)/$@ server.cpp
+
+statistics.o:
+	$(CXXC) $(CXXFLAGS) -c -o $(BUILD_DIR)/$@ include/psvt/statistics.cpp
 
 cfg.o:
 	$(CXXC) $(CXXFLAGS) -c -o $(BUILD_DIR)/$@ util/cfg.cpp

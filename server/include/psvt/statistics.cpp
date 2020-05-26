@@ -16,29 +16,20 @@
 //   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //   GNU General Public License for more details.
 //************************************************************************
-#include <cmath>
-#include <cstdlib>
+#include "statistics.hpp"
 
-int flt_cmp(const void* first, const void* second) {
-    if (*(reinterpret_cast<const float*>(first)) > *(reinterpret_cast<const float*>(second)))
-        return (1);
-    else {
-        if (*(reinterpret_cast<const float*>(first)) < *(reinterpret_cast<const float*>(second)))
-            return (-1);
-        else
-            return (0);
-    }
-}
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
 int dbl_cmp(const void* first, const void* second) {
     if (*(reinterpret_cast<const double*>(first)) > *(reinterpret_cast<const double*>(second)))
-        return (1);
-    else {
-        if (*(reinterpret_cast<const double*>(first)) < *(reinterpret_cast<const double*>(second)))
-            return (-1);
-        else
-            return (0);
-    }
+        return 1;
+
+    if (*(reinterpret_cast<const double*>(first)) < *(reinterpret_cast<const double*>(second)))
+        return -1;
+
+    return 0;
 }
 
 //    Anderson-Darling test for uniformity.   Given an ordered set
@@ -52,11 +43,11 @@ int dbl_cmp(const void* first, const void* second) {
 // Short, practical version of full ADinf(z), z>0.
 double adinf(double zzz) {
     if (zzz < 2.)
-        return (exp(-1.2337141 / zzz) / sqrt(zzz) *
+        return (std::exp(-1.2337141 / zzz) / std::sqrt(zzz) *
                 (2.00012 + (.247105 - (.0649821 - (.0347962 - (.011672 - .00168691 * zzz) * zzz) * zzz) * zzz) * zzz));
     // max |error| < .000002 for zzz<2, (p=.90816...)
     else
-        return (exp(-exp(
+        return (std::exp(-std::exp(
             1.0776 - (2.30695 - (.43424 - (.082433 - (.008056 - .0003146 * zzz) * zzz) * zzz) * zzz) * zzz)));
     // max |error|<.0000008 for 4<zzz<infinity
 }
@@ -106,7 +97,7 @@ double AD(int order, double z_arg) {
     w_tmp[0] = .01265 + .1757 / order;
     if (w_tmp[2] < w_tmp[0]) {
         w_tmp[1] = w_tmp[2] / w_tmp[0];
-        w_tmp[1] = sqrt(w_tmp[1]) * (1. - w_tmp[1]) * (49 * w_tmp[1] - 102);
+        w_tmp[1] = std::sqrt(w_tmp[1]) * (1. - w_tmp[1]) * (49 * w_tmp[1] - 102);
         return (w_tmp[2] + w_tmp[1] * (.0037 / (order * order) + .00078 / order + .00006) / order);
     }
     w_tmp[1] = (w_tmp[2] - w_tmp[0]) / (.8 - w_tmp[0]);
@@ -171,7 +162,7 @@ double KS_Estim(double d, int n) // K(int n,double d)
     /*OMIT IF YOU REQUIRE >7 DIGIT ACCURACY IN THE RIGHT TAIL*/
     s = d * d * n;
     if (s > 7.24 || (s > 3.76 && n > 99))
-        return (1 - 2 * exp(-(2.000071 + .331 / sqrt(1.0 * n) + 1.409 / n) * s));
+        return (1 - 2 * std::exp(-(2.000071 + .331 / std::sqrt(1.0 * n) + 1.409 / n) * s));
 #endif
     k = (int)(n * d) + 1;
     m = 2 * k - 1;
@@ -188,10 +179,10 @@ double KS_Estim(double d, int n) // K(int n,double d)
             else
                 H[i * m + j] = 1;
     for (i = 0; i < m; i++) {
-        H[i * m] -= pow(h, i + 1);
-        H[(m - 1) * m + i] -= pow(h, (m - i));
+        H[i * m] -= std::pow(h, i + 1);
+        H[(m - 1) * m + i] -= std::pow(h, (m - i));
     }
-    H[(m - 1) * m] += (2 * h - 1 > 0 ? pow(2 * h - 1, m) : 0);
+    H[(m - 1) * m] += (2 * h - 1 > 0 ? std::pow(2 * h - 1, m) : 0);
     for (i = 0; i < m; i++)
         for (j = 0; j < m; j++)
             if (i - j + 1 > 0)
@@ -207,7 +198,7 @@ double KS_Estim(double d, int n) // K(int n,double d)
             eQ -= 140;
         }
     }
-    s *= pow(10., eQ);
+    s *= std::pow(10., eQ);
     // free(H);
     // free(Q);
     delete[] H;
@@ -225,12 +216,12 @@ double Kolmogorov_D(double value) {
 
     atwo = -2. * value * value;
     for (jj = 1; jj < RATHER_BIG; jj++) {
-        term = fac * exp(atwo * jj * jj);
+        term = fac * std::exp(atwo * jj * jj);
         sum += term;
-        if (fabs(term) <= EPSILON1 * termbuf || fabs(term) <= EPSILON2 * sum)
+        if (std::fabs(term) <= EPSILON1 * termbuf || std::fabs(term) <= EPSILON2 * sum)
             return (sum);
         fac     = -fac;
-        termbuf = fabs(term);
+        termbuf = std::fabs(term);
     }
     return (1.0);
 }
@@ -244,12 +235,12 @@ double Kuiper_Q(double value) {
     atwo = 2. * value * value;
     for (int jj = 1; jj < RATHER_BIG; jj++) {
         double fac  = (2.0 * atwo * jj * jj - 1);
-        double term = fac * exp(-atwo * jj * jj);
+        double term = fac * std::exp(-atwo * jj * jj);
         sum += term;
-        if (fabs(term) <= EPSILON1 * termbuf || fabs(term) <= EPSILON2 * sum)
+        if (std::fabs(term) <= EPSILON1 * termbuf || std::fabs(term) <= EPSILON2 * sum)
             return (2 * sum);
 
-        termbuf = fabs(term);
+        termbuf = std::fabs(term);
     }
     return (2 * sum);
 }
@@ -259,7 +250,7 @@ double Kuiper_Q(double value) {
 #undef RATHER_BIG
 
 #define _ACCURACY 1.E-13
-#include <cstring>
+
 //  Fasano-Franceschini two-dimensional test
 unsigned StTest2D(double& KS2D_measure, double& KS2D_estim, double& PearsonCorr, double* unifP, double* unifQ, unsigned NSample) {
     unsigned wtmp[5], maxloc(0);
@@ -285,8 +276,8 @@ unsigned StTest2D(double& KS2D_measure, double& KS2D_estim, double& PearsonCorr,
             }
         }
         for (unsigned kk = 1; kk < 5; kk++) {
-            tmpval = fabs(wtmp[kk] * InvN - fabs(((((kk + 1) * (kk + 2)) / 2) % 2 - unifP[ii]) *
-                                                 (((kk * (kk + 1)) / 2) % 2 - unifQ[ii])));
+            tmpval = fabs(wtmp[kk] * InvN - std::fabs(((((kk + 1) * (kk + 2)) / 2) % 2 - unifP[ii]) *
+                                                      (((kk * (kk + 1)) / 2) % 2 - unifQ[ii])));
 
             if (tmpval > KS2D_measure) {
                 maxloc       = ii;
@@ -302,9 +293,9 @@ unsigned StTest2D(double& KS2D_measure, double& KS2D_estim, double& PearsonCorr,
         cov_sum[1] += (unifP[ii] - MeanP) * (unifP[ii] - MeanP);
         cov_sum[2] += (unifQ[ii] - MeanQ) * (unifQ[ii] - MeanQ);
     }
-    PearsonCorr = cov_sum[0] / (TINY + sqrt(cov_sum[1] * cov_sum[2]));
-    KS2D_estim  = Kolmogorov_D(KS2D_measure * sqrt(static_cast<double>(NSample)) /
-                              (1.0 + sqrt(1.0 - PearsonCorr * PearsonCorr) * (0.25 - 0.75 * sqrt(InvN))));
+    PearsonCorr = cov_sum[0] / (TINY + std::sqrt(cov_sum[1] * cov_sum[2]));
+    KS2D_estim  = Kolmogorov_D(KS2D_measure * std::sqrt(static_cast<double>(NSample)) /
+                              (1.0 + std::sqrt(1.0 - PearsonCorr * PearsonCorr) * (0.25 - 0.75 * std::sqrt(InvN))));
     return (maxloc);
 }
 
@@ -329,7 +320,7 @@ void StTests1D(double* OrdUnif,
                                                              : -0.5 * SmallShift;
         if (SmallShift * SmallShift > 0.0) {
             for (unsigned ii = 0; ii < NSample; ii++)
-                AD_measure += (2 * ii + 1) * log((OrdUnif[ii] + SmallShift) *
+                AD_measure += (2 * ii + 1) * std::log((OrdUnif[ii] + SmallShift) *
                                                  (1. - OrdUnif[NSample - 1 - ii] - SmallShift));
         } else {
             for (unsigned ii = 0; ii < NSample; ii++) {
@@ -337,22 +328,22 @@ void StTests1D(double* OrdUnif,
                 double prot_val[2];
                 prot_val[0] = (1. - OrdUnif[NSample - 1 - ii] > 0.) ? 1. - OrdUnif[NSample - 1 - ii] : _ACCURACY;
                 prot_val[1] = OrdUnif[ii] > 0. ? OrdUnif[ii] : _ACCURACY;
-                AD_measure += (2 * ii + 1) * log(prot_val[1] * prot_val[0]);
+                AD_measure += (2 * ii + 1) * std::log(prot_val[1] * prot_val[0]);
             }
         }
     } else {
         for (unsigned ii = 0; ii < NSample; ii++)
-            AD_measure += (2 * ii + 1) * log((OrdUnif[ii]) * (1. - OrdUnif[NSample - 1 - ii]));
+            AD_measure += (2 * ii + 1) * std::log((OrdUnif[ii]) * (1. - OrdUnif[NSample - 1 - ii]));
     }
 
     AD_measure = -(AD_measure / NSample + NSample);
     AD_estim   = 1.0 - AD(NSample, AD_measure);
     max_dist   = 0.;
     for (unsigned iii = 0; iii < NSample; iii++) {
-        double dist_now = fabs(OrdUnif[iii] - iii / (1.0 * NSample));
+        double dist_now = std::fabs(OrdUnif[iii] - iii / (1.0 * NSample));
         max_dist        = max_dist > dist_now ? max_dist : dist_now;
     }
-    ks_estim = Kolmogorov_D(max_dist * (sqrt(1. * NSample) + 0.12 + 0.11 / sqrt(1. * NSample)));
+    ks_estim = Kolmogorov_D(max_dist * (std::sqrt(1. * NSample) + 0.12 + 0.11 / std::sqrt(1. * NSample)));
 
     return;
 }
@@ -380,7 +371,7 @@ void StTests1D(double* OrdUnif,
                                                              : -0.5 * SmallShift;
         if (SmallShift * SmallShift > 0.0) {
             for (unsigned ii = 0; ii < NSample; ii++)
-                AD_measure += (2 * ii + 1) * log((OrdUnif[ii] + SmallShift) *
+                AD_measure += (2 * ii + 1) * std::log((OrdUnif[ii] + SmallShift) *
                                                  (1. - OrdUnif[NSample - 1 - ii] - SmallShift));
         } else {
             for (unsigned ii = 0; ii < NSample; ii++) {
@@ -388,22 +379,22 @@ void StTests1D(double* OrdUnif,
                 double prot_val[2];
                 prot_val[0] = (1. - OrdUnif[NSample - 1 - ii] > 0.) ? 1. - OrdUnif[NSample - 1 - ii] : _ACCURACY;
                 prot_val[1] = OrdUnif[ii] > 0. ? OrdUnif[ii] : _ACCURACY;
-                AD_measure += (2 * ii + 1) * log(prot_val[1] * prot_val[0]);
+                AD_measure += (2 * ii + 1) * std::log(prot_val[1] * prot_val[0]);
             }
         }
     } else {
         for (unsigned ii = 0; ii < NSample; ii++)
-            AD_measure += (2 * ii + 1) * log((OrdUnif[ii]) * (1. - OrdUnif[NSample - 1 - ii]));
+            AD_measure += (2 * ii + 1) * std::log((OrdUnif[ii]) * (1. - OrdUnif[NSample - 1 - ii]));
     }
 
     AD_measure = -(AD_measure / NSample + NSample);
     AD_estim   = 1.0 - AD(NSample, AD_measure);
     max_dist   = 0.;
     for (unsigned iii = 0; iii < NSample; iii++) {
-        double dist_now = fabs(OrdUnif[iii] - iii / (1.0 * NSample));
+        double dist_now = std::fabs(OrdUnif[iii] - iii / (1.0 * NSample));
         max_dist        = max_dist > dist_now ? max_dist : dist_now;
     }
-    ks_estim = Kolmogorov_D(max_dist * (sqrt(1. * NSample) + 0.12 + 0.11 / sqrt(1. * NSample)));
+    ks_estim = Kolmogorov_D(max_dist * (std::sqrt(1. * NSample) + 0.12 + 0.11 / std::sqrt(1. * NSample)));
 
     double max_dist_plus(0), max_dist_minus(0);
     for (unsigned iii = 0; iii < NSample; iii++) {
@@ -414,9 +405,60 @@ void StTests1D(double* OrdUnif,
     }
     kuiper_v = max_dist_minus + max_dist_plus;
 
-    kv_estim = Kuiper_Q(kuiper_v * (sqrt(1. * NSample) + 0.155 + 0.24 / sqrt(1. * NSample)));
+    kv_estim = Kuiper_Q(kuiper_v * (std::sqrt(1. * NSample) + 0.155 + 0.24 / std::sqrt(1. * NSample)));
 
     return;
 }
 
 #undef _ACCURACY
+
+const double kAccuracy = 1.E-13;
+
+UnifTestResults UniformityTests(const std::vector<double>& sample) {
+    std::vector<double> sample_sorted(sample.size());
+    std::partial_sort_copy(sample.begin(), sample.end(), sample_sorted.begin(), sample_sorted.end());
+
+    UnifTestResults results;
+    double AD_measure = 0;
+
+    // we must be accurate with 0 and 1 margins for AD-test:
+    if (sample_sorted[0] <= 0. || sample_sorted[sample_sorted.size() - 1] >= 1.) {
+        // margin values are present, thus shift or correction is needed
+
+        double shift = sample_sorted[0];
+        if (1. - sample_sorted[sample_sorted.size() - 1] > shift)
+            shift = 0.5 * (1. - sample_sorted[sample_sorted.size() - 1]);
+        else
+            shift *= -0.5;
+
+        if (shift * shift > 0.) {
+            for (int i = 0; i < sample_sorted.size(); ++i)
+                AD_measure += (2 * i + 1) * std::log((sample_sorted[i] + shift) * (1. - sample_sorted[sample_sorted.size() - 1 - i] - shift));
+        } else {
+            for (int i = 0; i < sample_sorted.size(); ++i) {
+                // float conversion precision might be insufficient
+                double prot_val[2];
+                prot_val[0] = (1. - sample_sorted[sample_sorted.size() - 1 - i] > 0.) ? 1. - sample_sorted[sample_sorted.size() - 1 - i] : kAccuracy;
+                prot_val[1] = sample_sorted[i] > 0. ? sample_sorted[i] : kAccuracy;
+                AD_measure += (2 * i + 1) * std::log(prot_val[1] * prot_val[0]);
+            }
+        }
+    } else {
+        for (int i = 0; i < sample_sorted.size(); ++i)
+            AD_measure += (2 * i + 1) * std::log(sample_sorted[i] * (1. - sample_sorted[sample_sorted.size() - 1 - i]));
+    }
+    
+    results.AD_measure = -(AD_measure / sample_sorted.size() + sample_sorted.size());
+    results.AD_estimate = 1. - AD(sample_sorted.size(), results.AD_measure);
+
+    double max_distance = 0;
+    for (int i = 0; i < sample_sorted.size(); ++i) {
+        double distance = std::fabs(sample_sorted[i] - i / (1. * sample_sorted.size()));
+        max_distance    = max_distance > distance ? max_distance : distance;
+    }
+
+    results.KS_measure = max_distance;
+    results.KS_estimate = Kolmogorov_D(max_distance * (std::sqrt(1. * sample_sorted.size()) + 0.12 + 0.11 / std::sqrt(1. * sample_sorted.size())));
+
+    return results;
+}
