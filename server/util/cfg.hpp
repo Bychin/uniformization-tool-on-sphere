@@ -5,8 +5,12 @@
 
 namespace cfg {
     typedef nlohmann::json Config;
-    const Config GetConfig(const std::string);
 
+    // GetConfig returns new Config that was parsed from file in JSON format
+    const Config GetConfig(const std::string file);
+
+    // kConfig is a config in JSON format, that must be initialized with
+    // GetConfig() function.
     inline Config kConfig;
 }
 
