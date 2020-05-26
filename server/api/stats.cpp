@@ -119,13 +119,35 @@ bool StatsAPI::CheckClockwiseDirection(const Vector& M, const Vector& I, const V
     return false;
 }
 
+double StatsAPI::CalcGradientModulus(const CoordsOfPoint& point1, const CoordsOfPoint& point2) const {
+    Vector gradient;
+    double value_for_point1 = CalculateFunc(point1);
+
+    CoordsOfPoint point1_shifted_by_x = point1;
+    point1_shifted_by_x[0] = point2[0];
+    gradient[0] = (CalculateFunc(point1_shifted_by_x) - value_for_point1) / (point1_shifted_by_x[0] - point1[0]);
+
+    CoordsOfPoint point1_shifted_by_y = point1;
+    point1_shifted_by_y[1] = point2[1];
+    gradient[1] = (CalculateFunc(point1_shifted_by_y) - value_for_point1) / (point1_shifted_by_y[1] - point1[1]);
+
+    CoordsOfPoint point1_shifted_by_z = point1;
+    point1_shifted_by_z[2] = point2[2];
+    gradient[2] = (CalculateFunc(point1_shifted_by_z) - value_for_point1) / (point1_shifted_by_z[2] - point1[2]);
+
+    double squared_sum = 0.;
+    for (int i = 0; i < 3; ++i)
+        squared_sum += gradient[i] * gradient[i];
+
+    return std::sqrt(squared_sum);
+}
+
 double StatsAPI::CalcIntegralOnInfinitesimalCurve(const CoordsOfPoint& point1, const CoordsOfPoint& point2) const {
     CoordsOfPoint center_point;
     for (int i = 0; i < 3; ++i)
         center_point[i] = (point1[i] + point2[i]) / 2;
 
-    double gradient_modulus = 1; // TODO np.linalg.norm(self.grad_of_d(middle_point)) // self.grad_of_d = grad(self.distribution.calcForGradient)
-    // Градиент считается приближенно, через величины функции на сетке --- взять соседние точки и решить линейное уравнение, например.
+    double gradient_modulus = CalcGradientModulus(point1, point2);
 
     return DistanceBetweenPoints(point1, point2) / gradient_modulus;
 }
