@@ -13,7 +13,19 @@ SpiralGrid::SpiralGrid(int N, AngularGauss* distr) : points_amount(N), distr(dis
     EvaluateFunc();
 }
 
-void SpiralGrid::GenerateGrid() {
+const AngularGauss* SpiralGrid::Func(void) const {
+    return distr;
+}
+
+double SpiralGrid::MaxValue(void) const {
+    return max_value;
+}
+
+const std::vector<double>& SpiralGrid::Values(void) const {
+    return values;
+}
+
+void SpiralGrid::GenerateGrid(void) {
     points.reserve(points_amount);
     double theta = 0.;
 
@@ -55,12 +67,12 @@ double SpiralGrid::EvaluateFuncRoutine(int lower_bound, int upper_bound) {
     return local_max_value;
 }
 
-void SpiralGrid::EvaluateFunc() {
+void SpiralGrid::EvaluateFunc(void) {
     values.resize(points_amount);
 
     int threads_amount = cfg::kConfig["threads"].get<int>();
     auto bounds = Bounds(threads_amount, points_amount);
-    auto futures = new std::future<double>[threads_amount-1];
+    auto futures = std::vector<std::future<double>>(threads_amount-1);
 
     for (int i = 0; i < threads_amount-1; ++i)
         futures[i] = std::async(&SpiralGrid::EvaluateFuncRoutine, this, bounds[i], bounds[i+1]);
@@ -72,7 +84,6 @@ void SpiralGrid::EvaluateFunc() {
         if (max_value_from_routine > max_value)
             max_value = max_value_from_routine;
     }
-    delete[] futures;
 }
 
 double SpiralGrid::CalcIntegralInsideIsoline(double isoline_value) {
@@ -85,13 +96,8 @@ double SpiralGrid::CalcIntegralInsideIsoline(double isoline_value) {
         if (it > isoline_value)
             sum += it;
 
+    // since spiral grid's points are uniformly distributed over the sphere
+    // surface, the surface integral of the function is equal to sum of values
+    // on this surface multiplied by the area of elementary part
     return sum * elementary_part_area;
-}
-
-const std::vector<double>& SpiralGrid::Values() {
-    return values;
-}
-
-double SpiralGrid::MaxValue() {
-    return max_value;
 }

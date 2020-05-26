@@ -52,7 +52,7 @@ void ClassicGrid::GenerateGridAndEvaluateFunc(void) {
 
     int threads_amount = cfg::kConfig["threads"].get<int>();
     auto bounds = Bounds(threads_amount, cartesian_points.size());
-    auto threads = new std::thread[threads_amount-1];
+    auto threads = std::vector<std::thread>(threads_amount-1);
 
     for (int i = 0; i < threads_amount-1; ++i)
         threads[i] = std::thread(&ClassicGrid::EvaluateFuncRoutine, this, bounds[i], bounds[i+1]);
@@ -61,7 +61,6 @@ void ClassicGrid::GenerateGridAndEvaluateFunc(void) {
 
     for (int i = 0; i < threads_amount-1; ++i)
         threads[i].join();
-    delete[] threads;
 
     /* trapezium is stored as 4 vertices from A to D anticlockwise:
      *   A -<- D          A (== D)
