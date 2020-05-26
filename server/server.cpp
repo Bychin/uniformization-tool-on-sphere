@@ -1,16 +1,16 @@
-#include <boost/algorithm/string.hpp>
-#include <boost/container_hash/hash.hpp>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/lexical_cast.hpp>
 #include <chrono>
+#include <exception>
 #include <iostream>
 #include <string>
-#include <vector>
 #include <tuple>
-#include <exception>
+#include <vector>
 
-#include "psvt/statistics.cpp"
+#include <boost/algorithm/string.hpp>
+#include <boost/container_hash/hash.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
 #include "nlohmann/json.hpp"
+#include "psvt/statistics.hpp"
 #include "yhirose/httplib.h"
 
 #include "api/isoline.hpp"                 // IsolineAPI
@@ -23,18 +23,19 @@
 namespace ublas = boost::numeric::ublas;
 using json = nlohmann::json;
 
-// TODO std::tuple<std::array<double, 3>, std::array<double, 6>> -> AngularGaussParams
-// database stores distributions with raw mean and cov parameters.
-std::unordered_map<std::tuple<std::array<double, 3>, std::array<double, 6>>,
-                   std::tuple<ClassicGrid*, SpiralGrid*>,
-                   boost::hash<std::tuple<std::array<double, 3>, std::array<double, 6>>>>
-    database;
+// GridsCache stores grids by raw mean and cov parameters.
+typedef std::unordered_map<std::tuple<std::array<double, 3>, std::array<double, 6>>,
+                           std::tuple<ClassicGrid*, SpiralGrid*>,
+                           boost::hash<std::tuple<std::array<double, 3>, std::array<double, 6>>>>
+    GridsCache;
+
+GridsCache* cache;
 
 std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std::array<double, 6>& cov) {
     auto key = std::make_tuple(mean, cov);
-    if (database.find(key) != database.end()) {
-        std::cout << "debug: got grids from database" << std::endl;
-        return database[key];
+    if (cache->find(key) != cache->end()) {
+        std::cout << "debug: got grids from cache" << std::endl;
+        return cache->at(key);
     }
 
     ublas::matrix<double> cov_mat(3, 3);
@@ -42,7 +43,8 @@ std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std:
     cov_mat(1,0) = cov[1], cov_mat(1,1) = cov[3], cov_mat(1,2) = cov[4];
     cov_mat(2,0) = cov[2], cov_mat(2,1) = cov[4], cov_mat(2,2) = cov[5];
 
-    std::cout << "debug: going to calculate grids with params: mean=" << mean.data() << ", cov=" << cov.data() << std::endl; // TODO
+    std::cout << "debug: going to calculate grids with params: mean=[" << mean[0] << "," << mean[1] << "," << mean[2] << "], cov=["
+        << cov[0] << "," << cov[1] << "," << cov[2] << "," << cov[3] << "," << cov[4] << "," << cov[5] << "]\n";
 
     AngularGauss* distribution = new AngularGauss(mean, cov_mat);
 
@@ -59,7 +61,7 @@ std::tuple<ClassicGrid*, SpiralGrid*> GetGrids(std::array<double, 3>& mean, std:
     std::cout << "debug: SpiralGrid is ready in " << duration.count() << "ms" << std::endl;
 
     auto result = std::make_tuple(classic_grid, spiral_grid);
-    database[key] = result;
+    (*cache)[key] = result;
 
     return result;
 }
@@ -198,6 +200,9 @@ void InitServer(void) {
     });
 
     server.Post("/api/stats", [&](const Request& req, Response& res) {
+        auto start = std::chrono::high_resolution_clock::now();
+        std::cout << "debug: /api/stats: got new POST request\n";
+
         res.status = 200;
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Request-Method", "POST");
@@ -206,8 +211,8 @@ void InitServer(void) {
 
         try {
             auto api = GetStatsAPI(req);
-            //api->Validate();
-            auto points = api->points;
+            api->Validate();
+            auto points = api->Points();
 
             std::vector<double> s_stats;
             s_stats.reserve(points.size());
@@ -218,48 +223,42 @@ void InitServer(void) {
             int t_skipped_counter = 0;
 
             for (int i = 0; i < points.size(); ++i) {
-                double value = api->spiral_grid->distr->Calc(points[i]);
+                double value = api->CalculateFunc(points[i]);
                 try {
                     t_stats.push_back(api->CalculateTStat(value));
                 } catch(std::exception& e) {
                     std::cerr << "error: could not calculate t stat for point #" << i << " (" <<
-                    points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
-                    std::cerr << "warning: t stat for point #" << i << " will be skipped" << std::endl;
+                        points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
+                    std::cout << "warning: t stat for point #" << i << " will be skipped" << std::endl;
                     ++t_skipped_counter;
                 }
                 try {
                     s_stats.push_back(api->CalculateSStat(points[i], value));
                 } catch(std::exception& e) {
                     std::cerr << "error: could not calculate s stat for point #" << i << " (" <<
-                    points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
-                    std::cerr << "warning: s stat for point #" << i << " will be skipped" << std::endl;
+                        points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
+                    std::cout << "warning: s stat for point #" << i << " will be skipped" << std::endl;
                     ++s_skipped_counter;
                 }
             }
 
             if (t_skipped_counter)
-                std::cerr << "warning: " << t_skipped_counter << " points were skipped for t stat calculation" << std::endl;
+                std::cout << "warning: " << t_skipped_counter << " points were skipped for t stat calculation" << std::endl;
             if (s_skipped_counter)
-                std::cerr << "warning: " << s_skipped_counter << " points were skipped for s stat calculation" << std::endl;
+                std::cout << "warning: " << s_skipped_counter << " points were skipped for s stat calculation" << std::endl;
 
             if (t_stats.size() != 0) {
-                double *OrdUnif = new double[t_stats.size()];
-                double KS_measure, KS_estim, AD_measure, AD_estim;
-                StTests1D(OrdUnif, KS_measure, KS_estim, AD_measure, AD_estim, t_stats.data(), t_stats.size());
-                std::cout << "t statistics results:" << std::endl;
-                std::cout << "KS_measure=" << KS_measure << " KS_estim=" << KS_estim << std::endl;
-                std::cout << "AD_measure=" << AD_measure << " AD_estim=" << AD_estim << std::endl;
-                delete[] OrdUnif;
+                auto tests_result = UniformityTests(t_stats);
+                std::cout << "info: t statistics results:" << std::endl;
+                std::cout << "info: KS_measure=" << tests_result.KS_measure << " KS_estimate=" << tests_result.KS_estimate << std::endl;
+                std::cout << "info: AD_measure=" << tests_result.AD_measure << " AD_estimate=" << tests_result.AD_estimate << std::endl;
             }
 
             if (s_stats.size() != 0) {
-                double *OrdUnif = new double[s_stats.size()];
-                double KS_measure, KS_estim, AD_measure, AD_estim;
-                StTests1D(OrdUnif, KS_measure, KS_estim, AD_measure, AD_estim, s_stats.data(), s_stats.size());
-                std::cout << "s statistics results:" << std::endl;
-                std::cout << "KS_measure=" << KS_measure << " KS_estim=" << KS_estim << std::endl;
-                std::cout << "AD_measure=" << AD_measure << " AD_estim=" << AD_estim << std::endl;
-                delete[] OrdUnif;
+                auto tests_result = UniformityTests(s_stats);
+                std::cout << "info: s statistics results:" << std::endl;
+                std::cout << "info: KS_measure=" << tests_result.KS_measure << " KS_estimate=" << tests_result.KS_estimate << std::endl;
+                std::cout << "info: AD_measure=" << tests_result.AD_measure << " AD_estimate=" << tests_result.AD_estimate << std::endl;
             }
 
             response["body"]["t"] = t_stats;
@@ -276,6 +275,9 @@ void InitServer(void) {
 
         response["code"] = 200;
         res.set_content(response.dump(), "application/json");
+
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+        std::cout << "debug: /api/stats: response is ready in " << duration.count() << "ms" << std::endl;
     });
 
     server.Options("/api/stats", [](const Request& req, Response& res) {
@@ -300,6 +302,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+    cache = new GridsCache;
     cfg::kConfig = cfg::GetConfig(argv[1]);
     InitServer();
 }
