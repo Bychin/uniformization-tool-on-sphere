@@ -222,6 +222,10 @@ void InitServer(void) {
             t_stats.reserve(points.size());
             int t_skipped_counter = 0;
 
+            bool s_stat_with_debug_info = cfg::kConfig["s_stat_with_debug_info"].get<bool>();
+            std::vector<json> s_stats_debug_info;
+            s_stats_debug_info.reserve(points.size());
+
             for (int i = 0; i < points.size(); ++i) {
                 double value = api->CalculateFunc(points[i]);
                 try {
@@ -233,7 +237,15 @@ void InitServer(void) {
                     ++t_skipped_counter;
                 }
                 try {
-                    s_stats.push_back(api->CalculateSStat(points[i], value));
+                    if (!s_stat_with_debug_info) {
+                        s_stats.push_back(api->CalculateSStat(points[i], value));
+                        continue;
+                    }
+
+                    auto result = api->CalculateSStatWithDebugInfo(points[i], value);
+                    s_stats.push_back(result["s"].get<double>());
+                    s_stats_debug_info.push_back(result);
+
                 } catch(std::exception& e) {
                     std::cerr << "error: could not calculate s stat for point #" << i << " (" <<
                         points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
@@ -249,6 +261,9 @@ void InitServer(void) {
 
             if (t_stats.size() != 0) {
                 auto tests_result = UniformityTests(t_stats);
+                response["body"]["t_results"] = json({});
+                response["body"]["t_results"]["ks_measure"] = tests_result.KS_measure, response["body"]["t_results"]["ks_est"] = tests_result.KS_estimate;
+                response["body"]["t_results"]["ad_measure"] = tests_result.AD_measure, response["body"]["t_results"]["ad_est"] = tests_result.AD_estimate;
                 std::cout << "info: t statistics results:" << std::endl;
                 std::cout << "info: KS_measure=" << tests_result.KS_measure << " KS_estimate=" << tests_result.KS_estimate << std::endl;
                 std::cout << "info: AD_measure=" << tests_result.AD_measure << " AD_estimate=" << tests_result.AD_estimate << std::endl;
@@ -256,6 +271,9 @@ void InitServer(void) {
 
             if (s_stats.size() != 0) {
                 auto tests_result = UniformityTests(s_stats);
+                response["body"]["s_results"] = json({});
+                response["body"]["s_results"]["ks_measure"] = tests_result.KS_measure, response["body"]["s_results"]["ks_est"] = tests_result.KS_estimate;
+                response["body"]["s_results"]["ad_measure"] = tests_result.AD_measure, response["body"]["s_results"]["ad_est"] = tests_result.AD_estimate;
                 std::cout << "info: s statistics results:" << std::endl;
                 std::cout << "info: KS_measure=" << tests_result.KS_measure << " KS_estimate=" << tests_result.KS_estimate << std::endl;
                 std::cout << "info: AD_measure=" << tests_result.AD_measure << " AD_estimate=" << tests_result.AD_estimate << std::endl;
@@ -263,6 +281,9 @@ void InitServer(void) {
 
             response["body"]["t"] = t_stats;
             response["body"]["s"] = s_stats;
+
+            if (s_stat_with_debug_info)
+                response["body"]["s_stats_debug_info"] = s_stats_debug_info;
 
             delete api;
 
