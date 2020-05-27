@@ -7,7 +7,11 @@
 #include <limits>
 #include <vector>
 
+#include "nlohmann/json.hpp"
+
 #include "types/types.hpp"
+
+using json = nlohmann::json;
 
 StatsAPI::StatsAPI(std::vector<CoordsOfPoint>& points, ClassicGrid* classic_grid, SpiralGrid* spiral_grid)
     : points(points), classic_grid(classic_grid), spiral_grid(spiral_grid) {
@@ -198,7 +202,7 @@ double StatsAPI::CalcIntegralOnRightCurveOnIsoline(const IsolineCoords& isoline_
     return sum + CalcIntegralOnInfinitesimalCurve(isoline_points[isoline_points.size()-1], isoline_points[0]);
 }
 
-double StatsAPI::CalculateSStat(const CoordsOfPoint& point, double value) const {
+json StatsAPI::CalculateSStatWithDebugInfo(const CoordsOfPoint& point, double value) const {
     auto isoline_points = classic_grid->GetIsolineCoords(value);
     int point_index = InsertPointIntoIsoline(point, isoline_points);
 
@@ -335,17 +339,25 @@ double StatsAPI::CalculateSStat(const CoordsOfPoint& point, double value) const 
     double isoline_integral = isoline_integral_on_left_curve + isoline_integral_on_right_curve;
 
     double curve_integral = 0;
-    bool clockwiseDirection = false;
+    bool clockwise_direction = false;
     if (CheckClockwiseDirection(normed_mean, vec_I, vec_A)) {
-        clockwiseDirection = true;
+        clockwise_direction = true;
         curve_integral = isoline_integral_on_right_curve;
     } else {
         curve_integral = isoline_integral_on_left_curve;
     }
 
-    // return clockwiseDirection too
-    // return {"isoline": isoline_points, "point": intersection_point_coords, "S": curve_integral / isoline_integral}
-    return curve_integral / isoline_integral;
+    json result_with_debug_info;
+    result_with_debug_info["isoline"] = isoline_points;
+    result_with_debug_info["intersection_point"] = intersection_point_coords;
+    result_with_debug_info["clockwise_direction"] = clockwise_direction;
+    result_with_debug_info["s"] = curve_integral / isoline_integral;
+
+    return result_with_debug_info;
+}
+
+double StatsAPI::CalculateSStat(const CoordsOfPoint& point, double value) const {
+    return CalculateSStatWithDebugInfo(point, value)["s"].get<double>();
 }
 
 double StatsAPI::CalculateTStat(double value) const {

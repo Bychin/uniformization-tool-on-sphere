@@ -4,9 +4,13 @@
 #include <array>
 #include <vector>
 
+#include "nlohmann/json.hpp"
+
 #include <grids/classic_grid.hpp>
 #include <grids/spiral_grid.hpp>
 #include <types/types.hpp>
+
+using json = nlohmann::json;
 
 class StatsAPI {
     std::vector<CoordsOfPoint> points;
@@ -36,6 +40,7 @@ public:
     double CalculateFunc(const CoordsOfPoint& point) const;
     double CalculateTStat(double value) const;
     double CalculateSStat(const CoordsOfPoint& point, double value) const;
+    json CalculateSStatWithDebugInfo(const CoordsOfPoint& point, double value) const;
 };
 
 #endif // STATS_HPP

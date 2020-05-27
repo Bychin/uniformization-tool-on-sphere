@@ -5,5 +5,7 @@
     "spiral_grid_points": 1000000,
     "classic_grid_div": 1440,
 
+    "s_stat_with_debug_info": true,
+
     "threads": 4
 }
