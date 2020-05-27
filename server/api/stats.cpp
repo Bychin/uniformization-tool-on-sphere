@@ -119,13 +119,35 @@ bool StatsAPI::CheckClockwiseDirection(const Vector& M, const Vector& I, const V
     return false;
 }
 
+double StatsAPI::CalcGradientModulus(const CoordsOfPoint& point1, const CoordsOfPoint& point2) const {
+    Vector gradient;
+    double value_for_point1 = CalculateFunc(point1);
+
+    CoordsOfPoint point1_shifted_by_x = point1;
+    point1_shifted_by_x[0] = point2[0];
+    gradient[0] = (CalculateFunc(point1_shifted_by_x) - value_for_point1) / (point1_shifted_by_x[0] - point1[0]);
+
+    CoordsOfPoint point1_shifted_by_y = point1;
+    point1_shifted_by_y[1] = point2[1];
+    gradient[1] = (CalculateFunc(point1_shifted_by_y) - value_for_point1) / (point1_shifted_by_y[1] - point1[1]);
+
+    CoordsOfPoint point1_shifted_by_z = point1;
+    point1_shifted_by_z[2] = point2[2];
+    gradient[2] = (CalculateFunc(point1_shifted_by_z) - value_for_point1) / (point1_shifted_by_z[2] - point1[2]);
+
+    double squared_sum = 0.;
+    for (int i = 0; i < 3; ++i)
+        squared_sum += gradient[i] * gradient[i];
+
+    return std::sqrt(squared_sum);
+}
+
 double StatsAPI::CalcIntegralOnInfinitesimalCurve(const CoordsOfPoint& point1, const CoordsOfPoint& point2) const {
     CoordsOfPoint center_point;
     for (int i = 0; i < 3; ++i)
         center_point[i] = (point1[i] + point2[i]) / 2;
 
-    double gradient_modulus = 1; // TODO np.linalg.norm(self.grad_of_d(middle_point)) // self.grad_of_d = grad(self.distribution.calcForGradient)
-    // Градиент считается приближенно, через величины функции на сетке --- взять соседние точки и решить линейное уравнение, например.
+    double gradient_modulus = CalcGradientModulus(point1, point2);
 
     return DistanceBetweenPoints(point1, point2) / gradient_modulus;
 }
@@ -303,14 +325,22 @@ double StatsAPI::CalculateSStat(const CoordsOfPoint& point, double value) const 
     auto vec_A = GetNormalizedVector(normed_mean, point_A);
     auto vec_I = GetNormalizedVector(normed_mean, intersection_point_coords);
 
-    double isoline_integral = CalcIntegralOnFullIsoline(isoline_points);
+    double isoline_integral_on_left_curve = CalcIntegralOnLeftCurveOnIsoline(isoline_points, intersection_point_index, point_index);
+    double isoline_integral_on_right_curve = CalcIntegralOnRightCurveOnIsoline(isoline_points, intersection_point_index, point_index);
+    
+    // double isoline_integral = CalcIntegralOnFullIsoline(isoline_points);
+    //
+    // the sum does not exactly coincide with the calculated integral,
+    // but the difference is in the ~16th digit
+    double isoline_integral = isoline_integral_on_left_curve + isoline_integral_on_right_curve;
+
     double curve_integral = 0;
     bool clockwiseDirection = false;
     if (CheckClockwiseDirection(normed_mean, vec_I, vec_A)) {
         clockwiseDirection = true;
-        curve_integral = CalcIntegralOnRightCurveOnIsoline(isoline_points, intersection_point_index, point_index);
+        curve_integral = isoline_integral_on_right_curve;
     } else {
-        curve_integral = CalcIntegralOnLeftCurveOnIsoline(isoline_points, intersection_point_index, point_index);
+        curve_integral = isoline_integral_on_left_curve;
     }
 
     // return clockwiseDirection too

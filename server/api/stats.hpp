@@ -20,6 +20,7 @@ class StatsAPI {
     int GetIndexOfNextIsolinePoint(int, const IsolineCoords&) const;
     bool CheckClockwiseDirection(const Vector&, const Vector&, const Vector&) const;
 
+    double CalcGradientModulus(const CoordsOfPoint&, const CoordsOfPoint&) const;
     // Calculates line integral on infinitesimal straight line between two points
     double CalcIntegralOnInfinitesimalCurve(const CoordsOfPoint&, const CoordsOfPoint&) const;
     double CalcIntegralOnFullIsoline(const IsolineCoords&) const;
