@@ -206,9 +206,9 @@ json StatsAPI::CalculateSStatWithDebugInfo(const CoordsOfPoint& point, double va
     auto isoline_points = classic_grid->GetIsolineCoords(value);
     int point_index = InsertPointIntoIsoline(point, isoline_points);
 
-    CoordsOfPoint zero_point = {0, 0, 0};
+    CoordsOfPoint origin = {0, 0, 0};
     auto mean = classic_grid->Func()->Mean();
-    auto normed_mean = GetNormalizedVector(zero_point, mean);
+    auto normed_mean = GetNormalizedVector(origin, mean);
     auto angles_of_mean = classic_grid->GetAnglesOfPoint(normed_mean); // TODO should I change distribution mean with the actual PDF's maximum?
 
     double mean_phi = angles_of_mean[0]; // azimuthal angle
@@ -349,7 +349,7 @@ json StatsAPI::CalculateSStatWithDebugInfo(const CoordsOfPoint& point, double va
 
     json result_with_debug_info;
     result_with_debug_info["isoline"] = isoline_points;
-    result_with_debug_info["intersection_point"] = intersection_point_coords;
+    result_with_debug_info["intersection_point"] = intersection_point_index;
     result_with_debug_info["clockwise_direction"] = clockwise_direction;
     result_with_debug_info["s"] = curve_integral / isoline_integral;
 

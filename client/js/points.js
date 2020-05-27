@@ -8,8 +8,8 @@ function uploadPointsFile() {
     if (input.files.length) {
         let textFile = input.files[0];
         
-        reader.onload = (e) => {processPointsFile(e)};
-        reader.onerror = (e) => {alert("Error while reading points file")};
+        reader.onload = e => processPointsFile(e);
+        reader.onerror = _ => alert("Error while reading points file");
 
         reader.readAsText(textFile);
     } else {
@@ -26,6 +26,10 @@ function processPointsFile(e) {
     let positions = [];
     let pointsRaw = file.split("\n");
     for (let point of pointsRaw) {
+        point = point.trim();
+        if (point === "")
+            continue;
+
         let coords = point.split(" "); // get X, Y, Z coordinates of a point
         let normalizedCoords = normalizePoint(coords);
 
@@ -38,7 +42,10 @@ function processPointsFile(e) {
 }
 
 function clearPoints() {
-    graphic.setupPoints([]);
+    graphic.setupPoints();
+    graphic.setupMeanPoint();
+    graphic.setupDebugIntPoints();
+    graphic.setupDebugDirPoints();
 }
 
 // normalizePoint normalizes point in 3 dimensional space with X, Y, Z coordinates

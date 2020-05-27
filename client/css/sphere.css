@@ -1,0 +1,77 @@
+hr {
+  margin: 10px;
+  width: 465px;
+}
+
+button {
+  font-size: 12px;
+}
+
+.primary-button {
+  background-color: #ffc8c8;
+  border-radius: 4px;
+}
+
+#sphere {
+  position: absolute;
+  left: 40%;
+  top: 2%;
+}
+
+#header {
+  width: 450px;
+  padding: 20px;
+  font-size: 30px;
+  text-align: center;
+  background-color: white;
+  color: black;
+}
+
+#dataset {
+  width: 450px;
+  padding: 10px;
+  font-size: 24px;
+  text-align: center;
+}
+
+#dataset-inputs {
+  padding: 10px;
+}
+
+#pointsFile {
+  border: 1px solid lightgray;
+  border-radius: 4px;
+  max-width: 200px;
+}
+
+#distribution {
+  width: 450px;
+  padding: 10px;
+  font-size: 24px;
+  text-align: center;
+}
+
+#statistics {
+  width: 450px;
+  padding: 10px;
+  font-size: 24px;
+  text-align: center;
+}
+
+#getStatsButton {
+  margin-left: 10px;
+}
+
+#results-area {
+  resize: none;
+  margin-top: 12px;
+  margin-left: 10px;
+  width: 440px;
+  height: 100px;
+  font-family: monospace;
+}
+
+#webgl {
+  width: 800px;
+  height: 800px;
+}
