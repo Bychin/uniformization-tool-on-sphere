@@ -8,7 +8,6 @@ function convertFraction(numRaw) {
     return parseFloat(n / d);
 }
 
-
 function getDistributionParams() {
     let mean = Array(3); // 3-dimensional vector
     mean[0] = document.getElementById("meanX").value;
@@ -62,7 +61,7 @@ function uploadAGD() {
         let isolines = []
         isolinesArray.forEach(e => {
             // e[0] - ratio, e[1] - array of coordinates
-            isolines.push(e[1].flat());
+            isolines.push(e[1]);
         })
 
         graphic.setupIsolines(isolines);
