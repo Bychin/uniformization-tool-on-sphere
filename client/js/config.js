@@ -16,6 +16,7 @@ const FPS_LIMIT = 30;
 
 const ISOLINE_AREA_RATIO = [0.9, 0.7, 0.5, 0.3, 0.1];
 const MAX_POINTS_IN_ISOLINE = 64;
+const DIR_POINT_OFFSET = 3;
 
 const COLORS = {
   BLACK: [0., 0., 0., 1.],

@@ -1,9 +1,13 @@
 function prepareStatsAPIJsonData() {
-    let [mean, covMatrix] = getDistributionParams();
+    if (graphic.points == null) {
+        alert("Upload points first");
+        return null;
+    }
 
+    let [mean, covMatrix] = getDistributionParams();
     let meanStr = mean.join(',');
     let covStr = covMatrix.join(',');
-    let points = graphic.points.positions.join(',') // TODO empty checks
+    let points = graphic.points.positions.join(',')
 
     return JSON.stringify({
         points: points,
@@ -14,7 +18,9 @@ function prepareStatsAPIJsonData() {
 
 function getStats() {
     let xhr = new XMLHttpRequest();
-    let data = prepareStatsAPIJsonData()
+    let data = prepareStatsAPIJsonData();
+    if (data === null)
+        return;
 
     xhr.open("POST", SERVER_URL + STATS_API)
     xhr.setRequestHeader('Content-type', 'application/json');
@@ -26,15 +32,16 @@ function getStats() {
         }
 
         let jsonResponse = JSON.parse(xhr.responseText);
-        console.log(jsonResponse)
-        let resp = jsonResponse.body;
+        if (jsonResponse.code != 200) {
+            alert(jsonResponse.code + ': ' + jsonResponse.body);
+        }
 
-        printTestsResults(resp);
+        printTestsResults(jsonResponse.body);
 
-        if (resp.s_stats_debug_info === undefined)
+        if (jsonResponse.body.s_stats_debug_info === undefined)
             return;
 
-        drawDebugElements(resp);
+        drawDebugElements(jsonResponse.body);
     };
 
     xhr.send(data);
@@ -53,14 +60,15 @@ AD-test: Measure: ${(response.s_results.ad_measure || NaN).toFixed(8)}, Estimate
 
 function drawDebugElements(response) {
     let debugIsolines = [];
-    let debugPoints = [];
+    let debugIntPoints = [];
     let debugDirPoints = [];
 
     for (let s_debug of response.s_stats_debug_info) {
         debugIsolines.push(s_debug.isoline);
-        debugPoints.push(s_debug.isoline[s_debug.intersection_point].flat());
+        debugIntPoints.push(s_debug.isoline[s_debug.intersection_point]);
 
-        let dirPoint = s_debug.clockwise_direction ? s_debug.isoline[s_debug.intersection_point+3] : s_debug.isoline[s_debug.intersection_point-3]; // TODO to cfg?
+        let offset = s_debug.clockwise_direction ? DIR_POINT_OFFSET : -DIR_POINT_OFFSET;
+        let dirPoint = s_debug.isoline[s_debug.intersection_point+offset];
         if (dirPoint === undefined) {
             if (s_debug.clockwise_direction)
                 dirPoint = s_debug.isoline[0];
@@ -68,10 +76,10 @@ function drawDebugElements(response) {
                 dirPoint = s_debug.isoline[s_debug.isoline.length-1];
         }
 
-        debugDirPoints.push(dirPoint.flat());
+        debugDirPoints.push(dirPoint);
     }
 
     graphic.setupDebugIsolines(debugIsolines);
-    graphic.setupDebugIntPoints(debugPoints.flat());
+    graphic.setupDebugIntPoints(debugIntPoints.flat());
     graphic.setupDebugDirPoints(debugDirPoints.flat());
 }

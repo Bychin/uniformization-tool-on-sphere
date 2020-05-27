@@ -130,7 +130,12 @@ class Graphic {
     this.sphere = sphere;
   }
 
-  setupPoints(positions) {
+  setupPoints(positions=null) {
+    if (positions == null) {
+      this.points = null;
+      return;
+    }
+
     this.points = {
       positions: positions,
       indices: [...Array(positions.length / 3).keys()],
@@ -139,7 +144,7 @@ class Graphic {
     };
   }
 
-  setupIsolines(isolines) {
+  setupIsolines(isolines=[]) {
     this.isolines = [];
 
     for (let isoline of isolines) {
@@ -160,7 +165,7 @@ class Graphic {
     }
   }
 
-  setupDebugIsolines(isolines) {
+  setupDebugIsolines(isolines=[]) {
     this.debugIsolines = [];
 
     for (let isoline of isolines) {
@@ -181,7 +186,12 @@ class Graphic {
     }
   }
 
-  setupMeanPoint(point) {
+  setupMeanPoint(point=null) {
+    if (point == null) {
+      this.meanPoint = null;
+      return;
+    }
+
     let pointLen = Math.hypot(...point);
     let normedPoint = point.map(x => x / pointLen);
     this.meanPoint = {
@@ -223,7 +233,12 @@ class Graphic {
   }
 
   // these points show the start from which s-statistic is counted
-  setupDebugIntPoints(positions) {
+  setupDebugIntPoints(positions=null) {
+    if (positions == null) {
+      this.debugIntPoints = null;
+      return;
+    }
+
     this.debugIntPoints = {
       positions: positions,
       indices: [...Array(positions.length / 3).keys()],
@@ -233,7 +248,12 @@ class Graphic {
   }
 
   // these points show in which direction from debugIntPoints s-stat is counted
-  setupDebugDirPoints(positions) {
+  setupDebugDirPoints(positions=null) {
+    if (positions == null) {
+      this.debugDirPoints = null;
+      return;
+    }
+
     this.debugDirPoints = {
       positions: positions,
       indices: [...Array(positions.length / 3).keys()],
@@ -352,16 +372,18 @@ class Graphic {
     if (this.isolines && this.isolines.length) {
       this.isolines.forEach(line => this.draw(line));
     }
-    if (this.debugIsolines && this.debugIsolines.length) {
+    let shouldDrawDebugIsolines = document.getElementById("debug-isolines").checked;
+    if (shouldDrawDebugIsolines && this.debugIsolines && this.debugIsolines.length) {
       this.debugIsolines.forEach(line => this.draw(line));
     }
     if (this.meanPoint) {
       this.draw(this.meanPoint);
     }
-    if (this.debugIntPoints) { // TODO (debug)
+    let shouldDrawDebugPoints = document.getElementById("debug-points").checked;
+    if (shouldDrawDebugPoints && this.debugIntPoints) {
       this.draw(this.debugIntPoints);
     }
-    if (this.debugDirPoints) { // TODO (debug)
+    if (shouldDrawDebugPoints && this.debugDirPoints) {
       this.draw(this.debugDirPoints);
     }
     if (this.points) {

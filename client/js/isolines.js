@@ -40,7 +40,7 @@ function prepareIsolineAPIQuery() {
     return SERVER_URL + ISOLINE_API + `?mean=${meanStr}&cov=${covStr}&ratio=${ratios}`;
 }
 
-function uploadAGD() {
+function getIsolines() {
     let url = prepareIsolineAPIQuery()
     let xhr = new XMLHttpRequest();
 
@@ -52,24 +52,20 @@ function uploadAGD() {
             return;
         }
 
-        let resp = JSON.parse(xhr.responseText);
-        if (resp.code != 200) {
-            alert(resp.code + ': ' + resp.body);
+        let jsonResponse = JSON.parse(xhr.responseText);
+        if (jsonResponse.code != 200) {
+            alert(jsonResponse.code + ': ' + jsonResponse.body);
         }
 
-        let isolinesArray = resp.body;
         let isolines = []
-        isolinesArray.forEach(e => {
-            // e[0] - ratio, e[1] - array of coordinates
-            isolines.push(e[1]);
-        })
-
+        jsonResponse.body.forEach(e => isolines.push(e[1]))
         graphic.setupIsolines(isolines);
     }
 
     xhr.send();
 }
 
-function clearAGD() {
-    graphic.setupIsolines([]);
+function clearIsolines() {
+    graphic.setupIsolines();
+    graphic.setupDebugIsolines();
 }

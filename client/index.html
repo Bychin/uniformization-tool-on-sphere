@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>Uniformization tool</title>
+  <title>Uniformization Tool</title>
   <link rel="stylesheet" href="/css/sphere.css">
 </head>
 
@@ -60,10 +60,10 @@
         <input type="text" id="cov33" value="1" maxlength="20" size="3"/>
       </div>
     </div>
-    <button id="clearAGDButton" onclick="clearAGD()">
+    <button onclick="clearIsolines()">
       Clear isolines
     </button>
-    <button id="uploadAGDButton" class="primary-button" onclick="uploadAGD()">
+    <button class="primary-button" onclick="getIsolines()">
       Draw isolines
     </button>
   </div>
@@ -100,10 +100,10 @@
   <script src="/js/vendor/cuon-matrix.js"></script>
 
   <script src="/js/config.js"></script>
-  <script src="/js/distribution.js"></script>
   <script src="/js/graphics.js"></script>
-  <script src="/js/points.js"></script>
   <script src="/js/sphere.js"></script>
+  <script src="/js/points.js"></script>
+  <script src="/js/isolines.js"></script>
   <script src="/js/stats.js"></script>
   <script src="/js/main.js"></script>
 </body>
