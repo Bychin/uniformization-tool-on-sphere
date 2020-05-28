@@ -54,10 +54,16 @@ class Camera {
 class Graphic {
   constructor() {
     this.canvas = document.getElementById('webgl');
+    this.debugIsolinesFlag = document.getElementById("debug-isolines");
+    this.debugPointsFlag = document.getElementById("debug-points");
+
+    this.debugIsolinesFlag.onchange = _ => this.drawScene();
+    this.debugPointsFlag.onchange = _ => this.drawScene();
 
     this.camera = new Camera();
     this.fpsInterval = 1000 / FPS_LIMIT;
     this.lastUpdateTime = Date.now();
+    this.mustDrawOnTick = false;
 
     /* params needed for scene rotation by mouse movement */
     this.drag = false;
@@ -69,6 +75,7 @@ class Graphic {
     this.PHI = 6;
 
     this.canvas.onmousedown = e => {
+      this.mustDrawOnTick = true;
       this.drag = true;
       this.previousX = e.pageX;
       this.previousY = e.pageY;
@@ -76,6 +83,7 @@ class Graphic {
       return false;
     };
     this.canvas.onmouseup = _ => {
+      this.mustDrawOnTick = false;
       this.drag = false;
     };
     this.canvas.onmousemove = e => {
@@ -128,11 +136,13 @@ class Graphic {
 
   setupSphere(sphere) {
     this.sphere = sphere;
+    this.drawScene();
   }
 
   setupPoints(positions=null) {
     if (positions == null) {
       this.points = null;
+      this.drawScene();
       return;
     }
 
@@ -142,6 +152,8 @@ class Graphic {
       color: COLORS.BLACK,
       mode: DRAW_MODE.POINTS
     };
+
+    this.drawScene();
   }
 
   setupIsolines(isolines=[]) {
@@ -163,6 +175,8 @@ class Graphic {
         mode: DRAW_MODE.LINE_LOOP
       });
     }
+
+    this.drawScene();
   }
 
   setupDebugIsolines(isolines=[]) {
@@ -184,11 +198,14 @@ class Graphic {
         mode: DRAW_MODE.LINE_LOOP
       });
     }
+
+    this.drawScene();
   }
 
   setupMeanPoint(point=null) {
     if (point == null) {
       this.meanPoint = null;
+      this.drawScene();
       return;
     }
 
@@ -200,6 +217,8 @@ class Graphic {
       color: COLORS.BLUE,
       mode: DRAW_MODE.POINTS
     };
+
+    this.drawScene();
   }
 
   setupCoordLines() {
@@ -230,12 +249,15 @@ class Graphic {
       color: COLORS.BLUE,
       mode: DRAW_MODE.LINE_STRIP
     };
+
+    this.drawScene();
   }
 
   // these points show the start from which s-statistic is counted
   setupDebugIntPoints(positions=null) {
     if (positions == null) {
       this.debugIntPoints = null;
+      this.drawScene();
       return;
     }
 
@@ -245,12 +267,15 @@ class Graphic {
       color: COLORS.BLUE,
       mode: DRAW_MODE.POINTS
     };
+
+    this.drawScene();
   }
 
   // these points show in which direction from debugIntPoints s-stat is counted
   setupDebugDirPoints(positions=null) {
     if (positions == null) {
       this.debugDirPoints = null;
+      this.drawScene();
       return;
     }
 
@@ -260,6 +285,8 @@ class Graphic {
       color: COLORS.LIGHT_BLUE,
       mode: DRAW_MODE.POINTS
     };
+
+    this.drawScene();
   }
 
   initVertexBuffersForObject(object) {
@@ -372,18 +399,16 @@ class Graphic {
     if (this.isolines && this.isolines.length) {
       this.isolines.forEach(line => this.draw(line));
     }
-    let shouldDrawDebugIsolines = document.getElementById("debug-isolines").checked;
-    if (shouldDrawDebugIsolines && this.debugIsolines && this.debugIsolines.length) {
+    if (this.debugIsolinesFlag.checked && this.debugIsolines && this.debugIsolines.length) {
       this.debugIsolines.forEach(line => this.draw(line));
     }
     if (this.meanPoint) {
       this.draw(this.meanPoint);
     }
-    let shouldDrawDebugPoints = document.getElementById("debug-points").checked;
-    if (shouldDrawDebugPoints && this.debugIntPoints) {
+    if (this.debugPointsFlag.checked && this.debugIntPoints) {
       this.draw(this.debugIntPoints);
     }
-    if (shouldDrawDebugPoints && this.debugDirPoints) {
+    if (this.debugPointsFlag.checked && this.debugDirPoints) {
       this.draw(this.debugDirPoints);
     }
     if (this.points) {
@@ -397,7 +422,9 @@ class Graphic {
     let time = Date.now();
     let elapsed = time - this.lastUpdateTime;
     if (elapsed > this.fpsInterval) {
-      this.drawScene();
+      if (this.mustDrawOnTick) {
+        this.drawScene();
+      }
       this.lastUpdateTime = time - (elapsed % this.fpsInterval);
     }
   }
