@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "nlohmann/json.hpp"
+#include "psvt/fisher_kappa.hpp"
 
 #include "types/types.hpp"
 
@@ -15,6 +16,18 @@ using json = nlohmann::json;
 
 StatsAPI::StatsAPI(std::vector<CoordsOfPoint>& points, ClassicGrid* classic_grid, SpiralGrid* spiral_grid)
     : points(points), classic_grid(classic_grid), spiral_grid(spiral_grid) {
+}
+
+StatsAPI::StatsAPI(std::vector<CoordsOfPoint>& points, std::vector<double>& alpha95Coeffs, ClassicGrid* classic_grid, SpiralGrid* spiral_grid)
+    : points(points), alpha95(alpha95Coeffs), classic_grid(classic_grid), spiral_grid(spiral_grid) {
+}
+
+const std::vector<CoordsOfPoint> StatsAPI::Points(void) const {
+    return points;
+}
+
+const std::vector<double> StatsAPI::Alpha95Coeffs(void) const {
+    return alpha95;
 }
 
 double StatsAPI::DistanceBetweenPoints(const CoordsOfPoint& point1, const CoordsOfPoint& point2) const {
@@ -78,6 +91,7 @@ int StatsAPI::InsertPointIntoIsoline(const CoordsOfPoint& point, IsolineCoords& 
     return point_index;
 }
 
+// TODO should move to util
 Vector StatsAPI::GetNormalizedVector(const CoordsOfPoint& point1, const CoordsOfPoint& point2) const {
     Vector vec;
     double squared_sum = 0.;
@@ -109,12 +123,12 @@ int StatsAPI::GetIndexOfNextIsolinePoint(int point_index, const IsolineCoords& i
 }
 
 bool StatsAPI::CheckClockwiseDirection(const Vector& M, const Vector& I, const Vector& A) const {
-    Vector AI; // a cross product of A and I vectors
-    AI[0] = A[1] * I[2] - A[2] * I[1]; 
-    AI[1] = A[2] * I[0] - A[0] * I[2]; 
+    Vector AI; // cross product of A and I vectors
+    AI[0] = A[1] * I[2] - A[2] * I[1];
+    AI[1] = A[2] * I[0] - A[0] * I[2];
     AI[2] = A[0] * I[1] - A[1] * I[0];
 
-    double AI_projection_on_M = 0; // a dot product of AI and M
+    double AI_projection_on_M = 0; // dot product of AI and M
     for (int i = 0; i < 3; ++i)
         AI_projection_on_M += AI[i] * M[i];
     
@@ -361,11 +375,8 @@ double StatsAPI::CalculateSStat(const CoordsOfPoint& point, double value) const 
 }
 
 double StatsAPI::CalculateTStat(double value) const {
+    // TODO if data with error, we should use classic_grid with convolved values
     return spiral_grid->CalcIntegralInsideIsoline(value);
-}
-
-const std::vector<CoordsOfPoint> StatsAPI::Points(void) const {
-    return points;
 }
 
 void StatsAPI::Validate(void) const {
@@ -380,6 +391,62 @@ void StatsAPI::Validate(void) const {
     }
 }
 
+Stats StatsAPI::CalculateStats() {
+    auto stats_with_debug_info = CalculateStatsWithDebugInfo();
+
+    return std::make_tuple(std::get<0>(stats_with_debug_info), std::get<1>(stats_with_debug_info));
+}
+
+StatsWithDebugInfo StatsAPI::CalculateStatsWithDebugInfo() {
+    bool data_with_errors = points.size() == alpha95.size();
+
+    std::vector<double> s_stats;
+    s_stats.reserve(points.size());
+    std::vector<json> stats_with_debug_info;
+    stats_with_debug_info.reserve(points.size());
+    int s_skipped_counter = 0;
+
+    std::vector<double> t_stats;
+    t_stats.reserve(points.size());
+    int t_skipped_counter = 0;
+
+    for (int i = 0; i < points.size(); ++i) {
+        if (data_with_errors) {
+            double kappa = Alpha95InDegreesToFisherKappa(alpha95[i]);
+            classic_grid->SetFisherKappa(kappa);
+        }
+
+        double value = classic_grid->CalcFunc(points[i]);
+
+        try {
+            t_stats.push_back(CalculateTStat(value));
+        } catch(std::exception& e) {
+            std::cerr << "error: StatsAPI: could not calculate t stat for point #" << i << " (" <<
+                points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
+            std::cout << "warning: StatsAPI: t stat for point #" << i << " will be skipped" << std::endl;
+            ++t_skipped_counter;
+        }
+
+        try {
+            auto result = CalculateSStatWithDebugInfo(points[i], value);
+            s_stats.push_back(result["s"].get<double>());
+            stats_with_debug_info.push_back(result);
+        } catch(std::exception& e) {
+            std::cerr << "error: StatsAPI: could not calculate s stat for point #" << i << " (" <<
+                points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
+            std::cout << "warning: StatsAPI: s stat for point #" << i << " will be skipped" << std::endl;
+            ++s_skipped_counter;
+        }
+    }
+
+    if (t_skipped_counter)
+        std::cout << "warning: StatsAPI: " << t_skipped_counter << " points were skipped for t stat calculation" << std::endl;
+    if (s_skipped_counter)
+        std::cout << "warning: StatsAPI: " << s_skipped_counter << " points were skipped for s stat calculation" << std::endl;
+
+    return std::make_tuple(t_stats, s_stats, stats_with_debug_info);
+}
+
 double StatsAPI::CalculateFunc(const CoordsOfPoint& point) const {
-    return spiral_grid->Func()->Calc(point);
+    return classic_grid->CalcFunc(point);
 }

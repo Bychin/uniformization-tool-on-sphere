@@ -13,9 +13,11 @@
 using json = nlohmann::json;
 
 class StatsAPI {
-    std::vector<CoordsOfPoint> points;
     ClassicGrid* classic_grid;
     SpiralGrid* spiral_grid;
+
+    std::vector<CoordsOfPoint> points;
+    std::vector<double> alpha95; // i'th coeff correspons to i'th point
 
     double DistanceBetweenPoints(const CoordsOfPoint&, const CoordsOfPoint&) const;
     int InsertPointIntoIsoline(const CoordsOfPoint&, IsolineCoords&) const;
@@ -33,11 +35,17 @@ class StatsAPI {
 
 public:
     StatsAPI(std::vector<CoordsOfPoint>& points, ClassicGrid* classic_grid, SpiralGrid* spiral_grid);
+    StatsAPI(std::vector<CoordsOfPoint>& points, std::vector<double>& alpha95Coeffs, ClassicGrid* classic_grid, SpiralGrid* spiral_grid);
 
     const std::vector<CoordsOfPoint> Points(void) const;
+    const std::vector<double> Alpha95Coeffs(void) const;
 
     void Validate(void) const;
-    double CalculateFunc(const CoordsOfPoint& point) const;
+    Stats CalculateStats();
+    StatsWithDebugInfo CalculateStatsWithDebugInfo();
+
+    // TODO make private
+    double CalculateFunc(const CoordsOfPoint& point) const; // TODO remove?
     double CalculateTStat(double value) const;
     double CalculateSStat(const CoordsOfPoint& point, double value) const;
     json CalculateSStatWithDebugInfo(const CoordsOfPoint& point, double value) const;

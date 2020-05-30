@@ -2,7 +2,10 @@
 #define SERVER_TYPES_HPP
 
 #include <array>
+#include <tuple>
 #include <vector>
+
+#include "nlohmann/json.hpp"
 
 // ClassicGridPoint represents (i, j) pair of point indices on a classic grid
 typedef std::array<int, 2> ClassicGridPoint;
@@ -21,5 +24,10 @@ typedef std::array<double, 3> Vector;
 
 // List of points in Cartesian coordinates making up isoline coordinates
 typedef std::vector<CoordsOfPoint> IsolineCoords;
+
+// t and s statistics for directional data
+typedef std::tuple<std::vector<double>, std::vector<double>> Stats;
+// t, s statistics and extra info for s statistic for directional data
+typedef std::tuple<std::vector<double>, std::vector<double>, nlohmann::json> StatsWithDebugInfo;
 
 #endif // SERVER_TYPES_HPP

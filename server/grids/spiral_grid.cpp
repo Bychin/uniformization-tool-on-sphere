@@ -13,10 +13,6 @@ SpiralGrid::SpiralGrid(int N, AngularGauss* distr) : points_amount(N), distr(dis
     EvaluateFunc();
 }
 
-const AngularGauss* SpiralGrid::Func(void) const {
-    return distr;
-}
-
 double SpiralGrid::MaxValue(void) const {
     return max_value;
 }

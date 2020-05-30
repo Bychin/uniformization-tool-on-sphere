@@ -212,52 +212,7 @@ void InitServer(void) {
         try {
             auto api = GetStatsAPI(req);
             api->Validate();
-            auto points = api->Points();
-
-            std::vector<double> s_stats;
-            s_stats.reserve(points.size());
-            int s_skipped_counter = 0;
-
-            std::vector<double> t_stats;
-            t_stats.reserve(points.size());
-            int t_skipped_counter = 0;
-
-            bool s_stat_with_debug_info = cfg::kConfig["s_stat_with_debug_info"].get<bool>();
-            std::vector<json> s_stats_debug_info;
-            s_stats_debug_info.reserve(points.size());
-
-            for (int i = 0; i < points.size(); ++i) {
-                double value = api->CalculateFunc(points[i]);
-                try {
-                    t_stats.push_back(api->CalculateTStat(value));
-                } catch(std::exception& e) {
-                    std::cerr << "error: could not calculate t stat for point #" << i << " (" <<
-                        points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
-                    std::cout << "warning: t stat for point #" << i << " will be skipped" << std::endl;
-                    ++t_skipped_counter;
-                }
-                try {
-                    if (!s_stat_with_debug_info) {
-                        s_stats.push_back(api->CalculateSStat(points[i], value));
-                        continue;
-                    }
-
-                    auto result = api->CalculateSStatWithDebugInfo(points[i], value);
-                    s_stats.push_back(result["s"].get<double>());
-                    s_stats_debug_info.push_back(result);
-
-                } catch(std::exception& e) {
-                    std::cerr << "error: could not calculate s stat for point #" << i << " (" <<
-                        points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "): " << e.what() << std::endl;
-                    std::cout << "warning: s stat for point #" << i << " will be skipped" << std::endl;
-                    ++s_skipped_counter;
-                }
-            }
-
-            if (t_skipped_counter)
-                std::cout << "warning: " << t_skipped_counter << " points were skipped for t stat calculation" << std::endl;
-            if (s_skipped_counter)
-                std::cout << "warning: " << s_skipped_counter << " points were skipped for s stat calculation" << std::endl;
+            auto [t_stats, s_stats, s_stats_debug_info] = api->CalculateStatsWithDebugInfo();
 
             if (t_stats.size() != 0) {
                 auto tests_result = UniformityTests(t_stats);
@@ -282,6 +237,7 @@ void InitServer(void) {
             response["body"]["t"] = t_stats;
             response["body"]["s"] = s_stats;
 
+            bool s_stat_with_debug_info = cfg::kConfig["s_stat_with_debug_info"].get<bool>();
             if (s_stat_with_debug_info)
                 response["body"]["s_stats_debug_info"] = s_stats_debug_info;
 

@@ -30,8 +30,6 @@ public:
     // SpiralGrid creates new spiral grid with N points and function distr on it
     SpiralGrid(int N, AngularGauss* disrt);
 
-    // Func returns function on grid
-    const AngularGauss* Func(void) const;
     // MaxValue returns the maximum value of the evaluated function the spiral grid
     double MaxValue(void) const;
     // Values returns vector of evaluated function's values on spiral grid
